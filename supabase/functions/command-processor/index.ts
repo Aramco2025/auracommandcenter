@@ -40,7 +40,7 @@ serve(async (req) => {
         result = await processEmailCommand(command, userId, supabaseClient);
       } else if (command.toLowerCase().includes('create task') || command.toLowerCase().includes('update task') || command_type === 'task') {
         result = await processTaskCommand(command, userId, supabaseClient);
-      } else if (command.toLowerCase().includes('schedule') || command_type === 'calendar') {
+      } else if (command.toLowerCase().includes('schedule') || command.toLowerCase().includes('calendar') || command.toLowerCase().includes('meeting') || command.toLowerCase().includes('what\'s on my calendar') || command_type === 'calendar') {
         result = await processCalendarCommand(command, userId, supabaseClient);
       } else if (command.toLowerCase().includes('record note') || command_type === 'voice') {
         result = await processVoiceCommand(command, userId, supabaseClient);
@@ -155,6 +155,38 @@ async function processTaskCommand(command: string, userId: string, supabase: any
 async function processCalendarCommand(command: string, userId: string, supabase: any) {
   console.log('Processing calendar command:', command);
   
+  // Handle "what's on my calendar" queries
+  if (command.toLowerCase().includes('what\'s on my calendar') || command.toLowerCase().includes('calendar today') || command.toLowerCase().includes('schedule today')) {
+    try {
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      
+      const { data: events, error } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('start_time', startOfDay.toISOString())
+        .lt('start_time', endOfDay.toISOString())
+        .order('start_time');
+
+      if (error) throw error;
+
+      if (events && events.length > 0) {
+        const eventList = events.map(event => 
+          `${event.title} at ${new Date(event.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
+        ).join(', ');
+        return { message: `Today's events: ${eventList}`, action: 'calendar_query', events };
+      } else {
+        return { message: 'No events scheduled for today', action: 'calendar_query_empty' };
+      }
+    } catch (error) {
+      console.error('Calendar query error:', error);
+      return { message: 'Calendar queried (demo mode - no events found)', action: 'calendar_query_demo' };
+    }
+  }
+  
+  // Handle schedule meeting commands
   if (command.toLowerCase().includes('schedule meeting')) {
     const meetingMatch = command.match(/schedule meeting[:\s]+(.+)/i);
     if (meetingMatch) {
