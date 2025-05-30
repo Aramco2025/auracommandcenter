@@ -1,12 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
-import { Mail, Calendar, MessageSquare } from "lucide-react";
 import { QuickStats } from "@/components/QuickStats";
 import { WeeklyPulse } from "@/components/WeeklyPulse";
 import { CommandBox } from "@/components/CommandBox";
@@ -15,12 +9,9 @@ import { OutreachMetrics } from "@/components/OutreachMetrics";
 import { TasksOverview } from "@/components/TasksOverview";
 import { CalendarPreview } from "@/components/CalendarPreview";
 import { AIAgentActivity } from "@/components/AIAgentActivity";
-import { UserMenu } from "@/components/UserMenu";
-import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  const { user } = useAuth();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -51,7 +42,6 @@ const Index = () => {
               <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
               Live
             </Badge>
-            <UserMenu />
           </div>
         </div>
 
