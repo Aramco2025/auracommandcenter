@@ -98,48 +98,74 @@ serve(async (req) => {
 });
 
 async function getGoogleAccessToken(userSupabase: any) {
-  // Try multiple methods to get the access token
-  const { data: session } = await userSupabase.auth.getSession();
-  
-  // Method 1: Direct from session
-  if (session.session?.provider_token) {
-    console.log('Found token in session provider_token');
-    return session.session.provider_token;
-  }
-  
-  // Method 2: From user metadata
-  if (session.session?.user?.user_metadata?.provider_token) {
-    console.log('Found token in user metadata');
-    return session.session.user.user_metadata.provider_token;
-  }
-  
-  // Method 3: Try refreshing if we have a refresh token
-  if (session.session?.provider_refresh_token) {
-    console.log('Attempting to refresh token...');
-    try {
-      const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          client_id: Deno.env.get('GOOGLE_CLIENT_ID') || '',
-          client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET') || '',
-          refresh_token: session.session.provider_refresh_token,
-          grant_type: 'refresh_token',
-        }),
-      });
-      
-      if (refreshResponse.ok) {
-        const refreshData = await refreshResponse.json();
-        console.log('Token refreshed successfully');
-        return refreshData.access_token;
-      }
-    } catch (error) {
-      console.error('Token refresh failed:', error);
+  try {
+    console.log('Getting Google access token...');
+    
+    // Get the current session
+    const { data: sessionData, error: sessionError } = await userSupabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error('Session error:', sessionError);
+      return null;
     }
+    
+    const session = sessionData.session;
+    
+    if (!session) {
+      console.log('No session found');
+      return null;
+    }
+    
+    console.log('Session provider:', session.user?.app_metadata?.provider);
+    console.log('Has provider_token:', !!session.provider_token);
+    console.log('Has provider_refresh_token:', !!session.provider_refresh_token);
+    
+    // Method 1: Direct from session provider_token
+    if (session.provider_token) {
+      console.log('Found access token in session.provider_token');
+      return session.provider_token;
+    }
+    
+    // Method 2: Try to refresh the token if we have a refresh token
+    if (session.provider_refresh_token) {
+      console.log('Attempting to refresh Google token using refresh token...');
+      
+      try {
+        const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            client_id: Deno.env.get('GOOGLE_CLIENT_ID') || '',
+            client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET') || '',
+            refresh_token: session.provider_refresh_token,
+            grant_type: 'refresh_token',
+          }),
+        });
+        
+        console.log('Google refresh response status:', refreshResponse.status);
+        
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json();
+          console.log('Successfully refreshed Google token');
+          return refreshData.access_token;
+        } else {
+          const errorText = await refreshResponse.text();
+          console.error('Failed to refresh Google token:', errorText);
+        }
+      } catch (refreshError) {
+        console.error('Error during token refresh:', refreshError);
+      }
+    }
+    
+    console.log('No valid Google access token found');
+    return null;
+    
+  } catch (error) {
+    console.error('Error in getGoogleAccessToken:', error);
+    return null;
   }
-  
-  console.log('No access token found');
-  return null;
 }
 
 async function processCalendarCommand(command: string, userId: string, supabase: any, userSupabase: any) {
@@ -218,53 +244,62 @@ async function processCalendarCommand(command: string, userId: string, supabase:
           };
         }
 
-        console.log('Using access token to create calendar event');
+        console.log('Creating Google Calendar event with access token');
 
         // Create event in Google Calendar
+        const eventData = {
+          summary: details.trim(),
+          start: {
+            dateTime: startTime.toISOString(),
+            timeZone: 'UTC',
+          },
+          end: {
+            dateTime: endTime.toISOString(),
+            timeZone: 'UTC',
+          },
+        };
+        
+        console.log('Event data:', JSON.stringify(eventData, null, 2));
+
         const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({
-            summary: details.trim(),
-            start: {
-              dateTime: startTime.toISOString(),
-              timeZone: Deno.env.get('TZ') || 'UTC',
-            },
-            end: {
-              dateTime: endTime.toISOString(),
-              timeZone: Deno.env.get('TZ') || 'UTC',
-            },
-          }),
+          body: JSON.stringify(eventData),
         });
 
         const calendarData = await calendarResponse.json();
-        console.log('Google Calendar API response:', calendarResponse.status, calendarData);
+        console.log('Google Calendar API response status:', calendarResponse.status);
+        console.log('Google Calendar API response:', JSON.stringify(calendarData, null, 2));
 
         if (!calendarResponse.ok) {
           console.error('Google Calendar API error:', calendarData);
           throw new Error(`Failed to create calendar event: ${calendarData.error?.message || 'Unknown error'}`);
         }
 
-        // Also store in our database for reference
-        const { data, error } = await supabase
-          .from('calendar_events')
-          .insert({
-            user_id: userId,
-            google_event_id: calendarData.id,
-            title: details.trim(),
-            start_time: startTime.toISOString(),
-            end_time: endTime.toISOString(),
-            status: 'confirmed',
-          })
-          .select()
-          .single();
+        // Store in our database for reference
+        try {
+          const { data, error } = await supabase
+            .from('calendar_events')
+            .insert({
+              user_id: userId,
+              google_event_id: calendarData.id,
+              title: details.trim(),
+              start_time: startTime.toISOString(),
+              end_time: endTime.toISOString(),
+              status: 'confirmed',
+            })
+            .select()
+            .single();
 
-        if (error) {
-          console.error('Database error:', error);
-          // Don't throw here as the Google Calendar event was created successfully
+          if (error) {
+            console.error('Database error:', error);
+            // Don't throw here as the Google Calendar event was created successfully
+          }
+        } catch (dbError) {
+          console.error('Database storage error:', dbError);
         }
 
         return { 
@@ -274,6 +309,7 @@ async function processCalendarCommand(command: string, userId: string, supabase:
         };
       } catch (error) {
         console.error('Calendar command error:', error);
+        
         // Fallback to local storage
         try {
           const { data, error } = await supabase
@@ -319,23 +355,29 @@ async function processEmailCommand(command: string, userId: string, supabase: an
 
       if (!accessToken) {
         // Record the email intent without sending
-        await supabase
-          .from('emails')
-          .insert({
-            user_id: userId,
-            message_id: `draft-${Date.now()}`,
-            subject: subject || 'Email from AURA',
-            sender_email: 'user@example.com',
-            recipient_emails: [recipient],
-            body_preview: command,
-            is_sent: false,
-          });
+        try {
+          await supabase
+            .from('emails')
+            .insert({
+              user_id: userId,
+              message_id: `draft-${Date.now()}`,
+              subject: subject || 'Email from AURA',
+              sender_email: 'user@example.com',
+              recipient_emails: [recipient],
+              body_preview: command,
+              is_sent: false,
+            });
+        } catch (dbError) {
+          console.error('Database error:', dbError);
+        }
 
         return { 
           message: `Email draft created for ${recipient}. Please reconnect Google to enable sending.`, 
           action: 'email_draft_auth_required' 
         };
       }
+
+      console.log('Sending email via Gmail API');
 
       // Create email content
       const emailContent = `Subject: ${subject || 'Message from AURA'}\r\nTo: ${recipient}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${subject || command}`;
@@ -353,23 +395,30 @@ async function processEmailCommand(command: string, userId: string, supabase: an
         }),
       });
 
+      console.log('Gmail API response status:', gmailResponse.status);
+
       if (gmailResponse.ok) {
         const gmailData = await gmailResponse.json();
+        console.log('Email sent successfully:', gmailData.id);
         
         // Record the sent email
-        const { data: session } = await userSupabase.auth.getSession();
-        await supabase
-          .from('emails')
-          .insert({
-            user_id: userId,
-            message_id: gmailData.id,
-            subject: subject || 'Email from AURA',
-            sender_email: session.session?.user?.email || 'user@example.com',
-            recipient_emails: [recipient],
-            body_preview: subject || command,
-            is_sent: true,
-            sent_at: new Date().toISOString(),
-          });
+        try {
+          const { data: session } = await userSupabase.auth.getSession();
+          await supabase
+            .from('emails')
+            .insert({
+              user_id: userId,
+              message_id: gmailData.id,
+              subject: subject || 'Email from AURA',
+              sender_email: session.session?.user?.email || 'user@example.com',
+              recipient_emails: [recipient],
+              body_preview: subject || command,
+              is_sent: true,
+              sent_at: new Date().toISOString(),
+            });
+        } catch (dbError) {
+          console.error('Database error:', dbError);
+        }
 
         return { 
           message: `✅ Email sent successfully to ${recipient}`, 
@@ -377,7 +426,9 @@ async function processEmailCommand(command: string, userId: string, supabase: an
           emailId: gmailData.id
         };
       } else {
-        throw new Error('Failed to send email via Gmail API');
+        const errorData = await gmailResponse.json();
+        console.error('Gmail API error:', errorData);
+        throw new Error(`Failed to send email: ${errorData.error?.message || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Email command error:', error);
