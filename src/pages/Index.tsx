@@ -13,10 +13,12 @@ import { AIAgentActivity } from "@/components/AIAgentActivity";
 import { AuthPage } from "@/components/AuthPage";
 import { useAuth } from "@/hooks/useAuth";
 import { LogOut } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { user, loading, signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -24,6 +26,12 @@ const Index = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/landing");
+    }
+  }, [user, loading, navigate]);
 
   if (loading) {
     return (
