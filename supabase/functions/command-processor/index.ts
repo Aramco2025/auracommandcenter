@@ -164,16 +164,27 @@ async function processCalendarCommand(command: string, userId: string, supabase:
       }
       
       try {
-        // Get the user's access token for Google Calendar
+        // Get the user's session and check for access token
         const { data: session } = await userSupabase.auth.getSession();
+        console.log('Session for calendar:', {
+          hasSession: !!session.session,
+          hasUser: !!session.session?.user,
+          hasProviderToken: !!session.session?.provider_token,
+          hasProviderRefreshToken: !!session.session?.provider_refresh_token,
+          provider: session.session?.user?.app_metadata?.provider
+        });
+
         const accessToken = session.session?.provider_token;
 
         if (!accessToken) {
+          console.log('No access token found in session');
           return { 
-            message: 'Please re-authenticate with Google to create calendar events', 
+            message: 'Please sign out and sign back in with Google to enable calendar access. Make sure to accept all permissions when prompted.', 
             action: 'auth_required' 
           };
         }
+
+        console.log('Using access token to create calendar event');
 
         // Create event in Google Calendar
         const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
@@ -196,6 +207,7 @@ async function processCalendarCommand(command: string, userId: string, supabase:
         });
 
         const calendarData = await calendarResponse.json();
+        console.log('Google Calendar API response:', calendarResponse.status, calendarData);
 
         if (!calendarResponse.ok) {
           console.error('Google Calendar API error:', calendarData);
@@ -222,7 +234,7 @@ async function processCalendarCommand(command: string, userId: string, supabase:
         }
 
         return { 
-          message: `Meeting "${details}" scheduled for ${startTime.toLocaleDateString()} at ${startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} and added to your Google Calendar`, 
+          message: `✅ Meeting "${details}" successfully created in your Google Calendar for ${startTime.toLocaleDateString()} at ${startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`, 
           action: 'meeting_scheduled_google',
           event: calendarData
         };

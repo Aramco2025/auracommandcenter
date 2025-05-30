@@ -23,20 +23,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.provider_token ? 'has token' : 'no token');
+        console.log('Auth state changed:', event);
+        console.log('Session details:', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          hasProviderToken: !!session?.provider_token,
+          hasProviderRefreshToken: !!session?.provider_refresh_token,
+          provider: session?.user?.app_metadata?.provider
+        });
+        
         setSession(session);
         setUser(session?.user ?? null);
-        setHasGoogleToken(!!session?.provider_token);
+        
+        // Check for provider token more thoroughly
+        const hasToken = !!(session?.provider_token || session?.provider_refresh_token);
+        setHasGoogleToken(hasToken);
         setLoading(false);
       }
     );
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session:', session?.provider_token ? 'has token' : 'no token');
+      console.log('Initial session check:', {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        hasProviderToken: !!session?.provider_token,
+        hasProviderRefreshToken: !!session?.provider_refresh_token,
+        provider: session?.user?.app_metadata?.provider
+      });
+      
       setSession(session);
       setUser(session?.user ?? null);
-      setHasGoogleToken(!!session?.provider_token);
+      
+      // Check for provider token more thoroughly
+      const hasToken = !!(session?.provider_token || session?.provider_refresh_token);
+      setHasGoogleToken(hasToken);
       setLoading(false);
     });
 
