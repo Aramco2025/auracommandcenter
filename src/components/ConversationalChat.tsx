@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, Bot, User, AlertCircle } from "lucide-react";
+import { MessageSquare, Send, Bot, User, AlertCircle, RefreshCw } from "lucide-react";
 import { useRealCommandProcessor } from "@/hooks/useRealSupabaseData";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,7 +23,7 @@ export const ConversationalChat = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: "Hi! I'm your AI assistant. I can help you with Gmail, Calendar, Notion tasks, and more. What would you like me to help you with today?",
+      content: "Hi! I'm your AI assistant. I can help you with Gmail, Calendar, Notion tasks, and more. Try saying:\n• 'Schedule team meeting for tomorrow at 2pm'\n• 'Send email to john@example.com about project update'\n• 'Create task: Review quarterly reports'",
       sender: 'ai',
       timestamp: new Date(),
       type: 'response'
@@ -31,7 +31,7 @@ export const ConversationalChat = () => {
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const { processCommand, isProcessing } = useRealCommandProcessor();
-  const { user, hasGoogleToken } = useAuth();
+  const { user, hasGoogleToken, refreshGoogleToken } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -41,6 +41,15 @@ export const ConversationalChat = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleRefreshToken = async () => {
+    const success = await refreshGoogleToken();
+    if (success) {
+      toast.success("Google connection refreshed successfully!");
+    } else {
+      toast.error("Failed to refresh Google connection. Please sign out and sign back in.");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +80,13 @@ export const ConversationalChat = () => {
         setMessages(prev => [...prev, aiResponse]);
         
         if (result.action) {
-          toast.success(`Action completed: ${result.action}`);
+          if (result.action.includes('_google') || result.action.includes('sent') || result.action.includes('created')) {
+            toast.success(`✅ ${result.action.replace('_', ' ').toUpperCase()}`);
+          } else if (result.action.includes('auth_required')) {
+            toast.error("Google authentication required - please sign out and sign back in");
+          } else {
+            toast.success(`Action completed: ${result.action}`);
+          }
         }
       } catch (error) {
         const errorMessage: Message = {
@@ -103,13 +118,19 @@ export const ConversationalChat = () => {
         <Badge variant={hasGoogleToken ? "secondary" : "destructive"} className="text-xs">
           {hasGoogleToken ? "Google Connected" : "Google Disconnected"}
         </Badge>
+        {!hasGoogleToken && (
+          <Button variant="outline" size="sm" onClick={handleRefreshToken}>
+            <RefreshCw className="w-3 h-3 mr-1" />
+            Refresh
+          </Button>
+        )}
       </div>
 
       {!hasGoogleToken && (
         <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-2">
           <AlertCircle className="w-4 h-4 text-yellow-600" />
           <p className="text-sm text-yellow-700">
-            Please sign out and sign back in with Google to enable calendar and email features.
+            Some features require Google connection. Please sign out and sign back in with Google to enable calendar and email features.
           </p>
         </div>
       )}
@@ -133,7 +154,7 @@ export const ConversationalChat = () => {
                     ? 'bg-destructive/10 text-destructive border border-destructive/20'
                     : 'bg-muted'
                 }`}>
-                  <p className="text-sm">{msg.content}</p>
+                  <p className="text-sm whitespace-pre-line">{msg.content}</p>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {msg.timestamp.toLocaleTimeString()}
@@ -164,7 +185,7 @@ export const ConversationalChat = () => {
         <Input
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          placeholder="Ask me to schedule meetings, send emails, check your calendar..."
+          placeholder="Ask me to schedule meetings, send emails, create tasks..."
           className="flex-1 bg-background border-border"
           disabled={isProcessing}
         />
@@ -175,7 +196,7 @@ export const ConversationalChat = () => {
 
       <div className="mt-2">
         <p className="text-xs text-muted-foreground text-center">
-          Try: "What's on my calendar today?" • "Send email to john@example.com" • "Create task: Review project"
+          Try: "What's on my calendar today?" • "Send email to john@example.com about meeting" • "Create task: Review project"
         </p>
       </div>
     </Card>

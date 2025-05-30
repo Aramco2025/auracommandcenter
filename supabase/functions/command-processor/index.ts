@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -43,7 +44,7 @@ serve(async (req) => {
     // Process different types of commands
     try {
       if (command.toLowerCase().includes('send email') || command_type === 'email') {
-        result = await processEmailCommand(command, userId, supabaseServiceClient);
+        result = await processEmailCommand(command, userId, supabaseServiceClient, supabaseClient);
       } else if (command.toLowerCase().includes('create task') || command.toLowerCase().includes('update task') || command_type === 'task') {
         result = await processTaskCommand(command, userId, supabaseServiceClient);
       } else if (command.toLowerCase().includes('schedule') || command.toLowerCase().includes('calendar') || command.toLowerCase().includes('meeting') || command.toLowerCase().includes('what\'s on my calendar') || command_type === 'calendar') {
@@ -131,13 +132,13 @@ async function processCalendarCommand(command: string, userId: string, supabase:
     }
   }
   
-  // Handle schedule meeting commands - NOW WITH REAL GOOGLE CALENDAR INTEGRATION
+  // Handle schedule meeting commands - REAL GOOGLE CALENDAR INTEGRATION
   if (command.toLowerCase().includes('schedule meeting') || command.toLowerCase().includes('schedule') || command.toLowerCase().includes('meeting')) {
     const meetingMatch = command.match(/schedule.*?meeting[:\s]+(.+)/i) || command.match(/schedule[:\s]+(.+)/i);
     if (meetingMatch) {
       const [, details] = meetingMatch;
       
-      // Parse time from the command (basic parsing for "tomorrow 9am", etc.)
+      // Parse time from the command
       let startTime = new Date();
       let endTime = new Date();
       
@@ -155,7 +156,7 @@ async function processCalendarCommand(command: string, userId: string, supabase:
         if (ampm === 'am' && hour === 12) hour = 0;
         
         startTime.setHours(hour, 0, 0, 0);
-        endTime.setHours(hour + 1, 0, 0, 0); // Default 1 hour duration
+        endTime.setHours(hour + 1, 0, 0, 0);
       } else {
         // Default to next available hour if no time specified
         const now = new Date();
@@ -174,7 +175,28 @@ async function processCalendarCommand(command: string, userId: string, supabase:
           provider: session.session?.user?.app_metadata?.provider
         });
 
-        const accessToken = session.session?.provider_token;
+        let accessToken = session.session?.provider_token;
+
+        // If no access token in session, try to refresh
+        if (!accessToken && session.session?.provider_refresh_token) {
+          console.log('Attempting to refresh Google token...');
+          const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              client_id: Deno.env.get('GOOGLE_CLIENT_ID') || '',
+              client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET') || '',
+              refresh_token: session.session.provider_refresh_token,
+              grant_type: 'refresh_token',
+            }),
+          });
+          
+          if (refreshResponse.ok) {
+            const refreshData = await refreshResponse.json();
+            accessToken = refreshData.access_token;
+            console.log('Token refreshed successfully');
+          }
+        }
 
         if (!accessToken) {
           console.log('No access token found in session');
@@ -272,32 +294,107 @@ async function processCalendarCommand(command: string, userId: string, supabase:
   return { message: 'Calendar command processed', action: 'calendar_general' };
 }
 
-async function processEmailCommand(command: string, userId: string, supabase: any) {
+async function processEmailCommand(command: string, userId: string, supabase: any, userSupabase: any) {
   console.log('Processing email command:', command);
   
-  // Extract email details from command (simplified)
+  // Extract email details from command
   const emailMatch = command.match(/send email to ([^\s]+)(?:\s+(?:about|with subject)\s+)?(.+)/i);
   if (emailMatch) {
     const [, recipient, subject] = emailMatch;
     
     try {
-      // Record the email intent (actual sending would require SMTP setup)
-      await supabase
-        .from('emails')
-        .insert({
-          user_id: userId,
-          message_id: `draft-${Date.now()}`,
-          subject: subject || 'Email from AURA',
-          sender_email: 'user@example.com',
-          recipient_emails: [recipient],
-          body_preview: command,
-          is_sent: false,
-        });
+      // Get access token for Gmail API
+      const { data: session } = await userSupabase.auth.getSession();
+      let accessToken = session.session?.provider_token;
 
-      return { message: `Email draft created for ${recipient}`, action: 'email_draft' };
+      if (!accessToken) {
+        // Record the email intent without sending
+        await supabase
+          .from('emails')
+          .insert({
+            user_id: userId,
+            message_id: `draft-${Date.now()}`,
+            subject: subject || 'Email from AURA',
+            sender_email: 'user@example.com',
+            recipient_emails: [recipient],
+            body_preview: command,
+            is_sent: false,
+          });
+
+        return { 
+          message: `Email draft created for ${recipient}. Please reconnect Google to enable sending.`, 
+          action: 'email_draft_auth_required' 
+        };
+      }
+
+      // Create email content
+      const emailContent = `Subject: ${subject || 'Message from AURA'}\r\nTo: ${recipient}\r\nContent-Type: text/plain; charset=utf-8\r\n\r\n${subject || command}`;
+      const encodedEmail = btoa(emailContent).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+      // Send via Gmail API
+      const gmailResponse = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          raw: encodedEmail
+        }),
+      });
+
+      if (gmailResponse.ok) {
+        const gmailData = await gmailResponse.json();
+        
+        // Record the sent email
+        await supabase
+          .from('emails')
+          .insert({
+            user_id: userId,
+            message_id: gmailData.id,
+            subject: subject || 'Email from AURA',
+            sender_email: session.session?.user?.email || 'user@example.com',
+            recipient_emails: [recipient],
+            body_preview: subject || command,
+            is_sent: true,
+            sent_at: new Date().toISOString(),
+          });
+
+        return { 
+          message: `✅ Email sent successfully to ${recipient}`, 
+          action: 'email_sent',
+          emailId: gmailData.id
+        };
+      } else {
+        throw new Error('Failed to send email via Gmail API');
+      }
     } catch (error) {
       console.error('Email command error:', error);
-      return { message: 'Email command processed (demo mode)', action: 'email_demo' };
+      
+      // Fallback: Record draft
+      try {
+        await supabase
+          .from('emails')
+          .insert({
+            user_id: userId,
+            message_id: `draft-${Date.now()}`,
+            subject: subject || 'Email from AURA',
+            sender_email: 'user@example.com',
+            recipient_emails: [recipient],
+            body_preview: command,
+            is_sent: false,
+          });
+
+        return { 
+          message: `Email draft created for ${recipient}. Could not send: ${error.message}`, 
+          action: 'email_draft_error' 
+        };
+      } catch (dbError) {
+        return { 
+          message: `Failed to process email command: ${error.message}`, 
+          action: 'email_failed' 
+        };
+      }
     }
   }
   
@@ -313,6 +410,55 @@ async function processTaskCommand(command: string, userId: string, supabase: any
       const [, title] = taskMatch;
       
       try {
+        // Check if we have Notion integration configured
+        const notionToken = Deno.env.get('NOTION_TOKEN');
+        const notionDatabaseId = Deno.env.get('NOTION_DATABASE_ID');
+
+        if (notionToken && notionDatabaseId) {
+          // Create task in Notion
+          const notionResponse = await fetch('https://api.notion.com/v1/pages', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${notionToken}`,
+              'Content-Type': 'application/json',
+              'Notion-Version': '2022-06-28',
+            },
+            body: JSON.stringify({
+              parent: { database_id: notionDatabaseId },
+              properties: {
+                Name: {
+                  title: [{ text: { content: title.trim() } }]
+                },
+                Status: {
+                  select: { name: 'To Do' }
+                }
+              }
+            }),
+          });
+
+          if (notionResponse.ok) {
+            const notionData = await notionResponse.json();
+            
+            // Also store locally
+            await supabase
+              .from('notion_tasks')
+              .insert({
+                user_id: userId,
+                notion_page_id: notionData.id,
+                title: title.trim(),
+                status: 'To Do',
+                notion_url: notionData.url,
+              });
+
+            return { 
+              message: `✅ Task "${title}" created in Notion successfully`, 
+              action: 'task_created_notion',
+              taskId: notionData.id
+            };
+          }
+        }
+
+        // Fallback: Create locally only
         await supabase
           .from('notion_tasks')
           .insert({
@@ -322,10 +468,16 @@ async function processTaskCommand(command: string, userId: string, supabase: any
             status: 'To Do',
           });
 
-        return { message: `Task created: ${title}`, action: 'task_created' };
+        return { 
+          message: `Task "${title}" created locally. Connect Notion for full integration.`, 
+          action: 'task_created_local' 
+        };
       } catch (error) {
         console.error('Task command error:', error);
-        return { message: `Task processed (demo mode): ${title}`, action: 'task_demo' };
+        return { 
+          message: `Failed to create task: ${error.message}`, 
+          action: 'task_failed' 
+        };
       }
     }
   }
