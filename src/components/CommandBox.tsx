@@ -24,7 +24,7 @@ export const CommandBox = () => {
     if (command.trim() && !isProcessing) {
       try {
         const result = await processCommand(command);
-        toast.success(result.result.message || "Command processed successfully");
+        toast.success(result.message || "Command processed successfully");
         setCommand("");
       } catch (error) {
         toast.error("Failed to process command");
