@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -69,7 +68,7 @@ export const AuthPage = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          scopes: 'email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly',
+          scopes: 'email profile openid https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar',
           redirectTo: window.location.origin,
         },
       });
