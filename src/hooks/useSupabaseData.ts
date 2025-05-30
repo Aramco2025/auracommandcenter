@@ -1,5 +1,5 @@
-
-import { useState, useEffect } from 'react';
+import { useAuth } from './useAuth';
+import { useRealSupabaseData, useRealCommandProcessor } from './useRealSupabaseData';
 
 // Sample data to simulate what would come from Supabase
 const sampleTasks = [
@@ -262,47 +262,37 @@ const sampleVoiceNotes = [
 ];
 
 export const useSupabaseData = () => {
+  const { user } = useAuth();
+  const realData = useRealSupabaseData();
+
+  // If user is authenticated, use real data, otherwise use sample data
+  if (user) {
+    return realData;
+  }
+
+  // Return sample data for unauthenticated users
   return {
-    emails: sampleEmails,
-    tasks: sampleTasks,
-    events: sampleEvents,
-    aiActivities: sampleAIActivities,
-    voiceNotes: sampleVoiceNotes,
+    emails: [],
+    tasks: sampleTasks.slice(0, 3), // Show fewer sample tasks when not authenticated
+    events: [],
+    aiActivities: [],
+    voiceNotes: [],
   };
 };
 
 export const useCommandProcessor = () => {
-  const [isProcessing, setIsProcessing] = useState(false);
+  const { user } = useAuth();
+  const realProcessor = useRealCommandProcessor();
+  
+  if (user) {
+    return realProcessor;
+  }
 
-  const processCommand = async (command: string, commandType?: string) => {
-    setIsProcessing(true);
-    
-    // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    try {
-      // Return mock response
-      const response = {
-        message: `Command "${command}" processed successfully`,
-        action: commandType || 'general_processing',
-        result: {
-          tasks_found: sampleTasks.filter(task => 
-            task.title.toLowerCase().includes(command.toLowerCase()) ||
-            task.status.toLowerCase().includes(command.toLowerCase())
-          ).length,
-          status: 'success'
-        }
-      };
-      
-      console.log('Command processed:', response);
-      return response;
-    } catch (error) {
-      console.error('Command processing error:', error);
-      throw error;
-    } finally {
-      setIsProcessing(false);
-    }
+  // Fallback for unauthenticated users
+  return {
+    processCommand: async (command: string) => {
+      throw new Error('Please sign in to use commands');
+    },
+    isProcessing: false,
   };
-
-  return { processCommand, isProcessing };
 };

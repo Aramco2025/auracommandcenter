@@ -5,23 +5,27 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { MessageSquare, Mic, Send } from "lucide-react";
-import { useCommandProcessor } from "@/hooks/useSupabaseData";
+import { useRealCommandProcessor } from "@/hooks/useRealSupabaseData";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 export const CommandBox = () => {
   const [command, setCommand] = useState("");
   const [isListening, setIsListening] = useState(false);
-  const { processCommand, isProcessing } = useCommandProcessor();
+  const { processCommand, isProcessing } = useRealCommandProcessor();
+  const { user } = useAuth();
   
   const [recentCommands] = useState([
     "Send follow-up to John Smith",
     "Schedule team meeting for tomorrow", 
-    "Update project status in Notion"
+    "Update project status in Notion",
+    "What's on my calendar today?",
+    "Create task: Review quarterly reports"
   ]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (command.trim() && !isProcessing) {
+    if (command.trim() && !isProcessing && user) {
       try {
         const result = await processCommand(command);
         toast.success(result.message || "Command processed successfully");
@@ -66,11 +70,18 @@ export const CommandBox = () => {
     }
   };
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <Card className="p-6 bg-card border-border">
       <div className="flex items-center gap-3 mb-4">
         <MessageSquare className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold text-foreground">Command Centre</h3>
+        <Badge variant="secondary" className="text-xs">
+          Connected to Google & Notion
+        </Badge>
       </div>
       
       <form onSubmit={handleSubmit} className="flex gap-2 mb-4">

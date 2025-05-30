@@ -1,6 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { QuickStats } from "@/components/QuickStats";
 import { WeeklyPulse } from "@/components/WeeklyPulse";
 import { CommandBox } from "@/components/CommandBox";
@@ -9,9 +10,13 @@ import { OutreachMetrics } from "@/components/OutreachMetrics";
 import { TasksOverview } from "@/components/TasksOverview";
 import { CalendarPreview } from "@/components/CalendarPreview";
 import { AIAgentActivity } from "@/components/AIAgentActivity";
+import { AuthPage } from "@/components/AuthPage";
+import { useAuth } from "@/hooks/useAuth";
+import { LogOut } from "lucide-react";
 
 const Index = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { user, loading, signOut } = useAuth();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -19,6 +24,23 @@ const Index = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <span className="text-primary-foreground font-bold text-xl">A</span>
+          </div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthPage />;
+  }
 
   return (
     <div className="min-h-screen bg-background dark p-4 md:p-6">
@@ -32,7 +54,7 @@ const Index = () => {
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-foreground">AURA Command Centre</h1>
               <p className="text-sm text-muted-foreground">
-                {currentTime.toLocaleDateString()} • {currentTime.toLocaleTimeString()}
+                Welcome back, {user.user_metadata?.full_name || user.email} • {currentTime.toLocaleDateString()} • {currentTime.toLocaleTimeString()}
               </p>
             </div>
           </div>
@@ -42,6 +64,10 @@ const Index = () => {
               <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
               Live
             </Badge>
+            <Button variant="outline" size="sm" onClick={signOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
           </div>
         </div>
 
