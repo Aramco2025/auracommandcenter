@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -15,10 +14,17 @@ serve(async (req) => {
   }
 
   try {
+    // Create client with user auth for getting user info
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+    );
+
+    // Create service role client for database operations
+    const supabaseServiceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     // Try to get user, but don't fail if not authenticated
@@ -37,15 +43,15 @@ serve(async (req) => {
     // Process different types of commands
     try {
       if (command.toLowerCase().includes('send email') || command_type === 'email') {
-        result = await processEmailCommand(command, userId, supabaseClient);
+        result = await processEmailCommand(command, userId, supabaseServiceClient);
       } else if (command.toLowerCase().includes('create task') || command.toLowerCase().includes('update task') || command_type === 'task') {
-        result = await processTaskCommand(command, userId, supabaseClient);
+        result = await processTaskCommand(command, userId, supabaseServiceClient);
       } else if (command.toLowerCase().includes('schedule') || command.toLowerCase().includes('calendar') || command.toLowerCase().includes('meeting') || command.toLowerCase().includes('what\'s on my calendar') || command_type === 'calendar') {
-        result = await processCalendarCommand(command, userId, supabaseClient);
+        result = await processCalendarCommand(command, userId, supabaseServiceClient);
       } else if (command.toLowerCase().includes('record note') || command_type === 'voice') {
-        result = await processVoiceCommand(command, userId, supabaseClient);
+        result = await processVoiceCommand(command, userId, supabaseServiceClient);
       } else {
-        result = await processGeneralCommand(command, userId, supabaseClient);
+        result = await processGeneralCommand(command, userId, supabaseServiceClient);
       }
     } catch (error) {
       console.error('Command processing error:', error);
@@ -56,7 +62,7 @@ serve(async (req) => {
     // Only save to command history if we have a real user
     if (user) {
       try {
-        await supabaseClient
+        await supabaseServiceClient
           .from('command_history')
           .insert({
             user_id: user.id,
@@ -192,19 +198,53 @@ async function processCalendarCommand(command: string, userId: string, supabase:
     if (meetingMatch) {
       const [, details] = meetingMatch;
       
+      // Parse time from the command (basic parsing for "tomorrow 9am", etc.)
+      let startTime = new Date();
+      let endTime = new Date();
+      
+      if (details.toLowerCase().includes('tomorrow')) {
+        startTime.setDate(startTime.getDate() + 1);
+        endTime.setDate(endTime.getDate() + 1);
+      }
+      
+      // Simple time parsing for "9am", "2pm", etc.
+      const timeMatch = details.match(/(\d{1,2})(am|pm)/i);
+      if (timeMatch) {
+        let hour = parseInt(timeMatch[1]);
+        const ampm = timeMatch[2].toLowerCase();
+        if (ampm === 'pm' && hour !== 12) hour += 12;
+        if (ampm === 'am' && hour === 12) hour = 0;
+        
+        startTime.setHours(hour, 0, 0, 0);
+        endTime.setHours(hour + 1, 0, 0, 0); // Default 1 hour duration
+      } else {
+        // Default to next available hour if no time specified
+        const now = new Date();
+        startTime.setHours(now.getHours() + 1, 0, 0, 0);
+        endTime.setHours(now.getHours() + 2, 0, 0, 0);
+      }
+      
       try {
-        await supabase
+        const { data, error } = await supabase
           .from('calendar_events')
           .insert({
             user_id: userId,
             google_event_id: `local-${Date.now()}`,
             title: details.trim(),
-            start_time: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-            end_time: new Date(Date.now() + 24 * 60 * 60 * 1000 + 60 * 60 * 1000).toISOString(),
-            status: 'tentative',
-          });
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+            status: 'confirmed',
+          })
+          .select()
+          .single();
 
-        return { message: `Meeting scheduled: ${details}`, action: 'meeting_scheduled' };
+        if (error) throw error;
+
+        return { 
+          message: `Meeting scheduled: ${details} on ${startTime.toLocaleDateString()} at ${startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`, 
+          action: 'meeting_scheduled',
+          event: data
+        };
       } catch (error) {
         console.error('Calendar command error:', error);
         return { message: `Meeting processed (demo mode): ${details}`, action: 'meeting_demo' };
