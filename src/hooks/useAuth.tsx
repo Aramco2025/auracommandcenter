@@ -20,15 +20,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [hasGoogleToken, setHasGoogleToken] = useState(false);
 
+  const checkTokenAvailability = (session: Session | null) => {
+    if (!session) {
+      setHasGoogleToken(false);
+      return false;
+    }
+
+    // Check multiple sources for tokens
+    const hasProviderToken = !!(session.provider_token || session.provider_refresh_token);
+    const hasStoredToken = !!(localStorage.getItem('google_access_token') || localStorage.getItem('google_refresh_token'));
+    const hasUserToken = !!(session.user?.user_metadata?.provider_token);
+    
+    const hasAnyToken = hasProviderToken || hasStoredToken || hasUserToken;
+    setHasGoogleToken(hasAnyToken);
+    
+    console.log('Token availability check:', {
+      hasProviderToken,
+      hasStoredToken,
+      hasUserToken,
+      finalResult: hasAnyToken
+    });
+    
+    return hasAnyToken;
+  };
+
   const refreshGoogleToken = async (): Promise<boolean> => {
     try {
+      console.log('Attempting to refresh Google token...');
       const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
-      if (error) throw error;
+      
+      if (error) {
+        console.error('Token refresh error:', error);
+        throw error;
+      }
       
       if (refreshedSession) {
         setSession(refreshedSession);
-        const hasToken = !!(refreshedSession.provider_token || refreshedSession.provider_refresh_token);
-        setHasGoogleToken(hasToken);
+        const hasToken = checkTokenAvailability(refreshedSession);
         console.log('Token refreshed successfully:', hasToken);
         return hasToken;
       }
@@ -55,18 +83,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        // Check for provider token more thoroughly
-        const hasToken = !!(session?.provider_token || session?.provider_refresh_token);
-        setHasGoogleToken(hasToken);
-        
-        // Store tokens in local storage for persistence
+        // Enhanced token persistence
         if (session?.provider_token) {
           localStorage.setItem('google_access_token', session.provider_token);
+          console.log('Stored provider token');
         }
         if (session?.provider_refresh_token) {
           localStorage.setItem('google_refresh_token', session.provider_refresh_token);
+          console.log('Stored refresh token');
         }
         
+        // Store additional token sources
+        if (session?.user?.user_metadata?.provider_token) {
+          localStorage.setItem('google_user_token', session.user.user_metadata.provider_token);
+          console.log('Stored user metadata token');
+        }
+        
+        checkTokenAvailability(session);
         setLoading(false);
       }
     );
@@ -83,10 +116,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       setSession(session);
       setUser(session?.user ?? null);
-      
-      // Check for provider token more thoroughly
-      const hasToken = !!(session?.provider_token || session?.provider_refresh_token);
-      setHasGoogleToken(hasToken);
+      checkTokenAvailability(session);
       setLoading(false);
     });
 
@@ -96,8 +126,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signOut = async () => {
     await supabase.auth.signOut();
     setHasGoogleToken(false);
+    // Clear all token storage
     localStorage.removeItem('google_access_token');
     localStorage.removeItem('google_refresh_token');
+    localStorage.removeItem('google_user_token');
   };
 
   return (

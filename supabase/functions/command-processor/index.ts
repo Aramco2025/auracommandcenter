@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -98,6 +97,51 @@ serve(async (req) => {
   }
 });
 
+async function getGoogleAccessToken(userSupabase: any) {
+  // Try multiple methods to get the access token
+  const { data: session } = await userSupabase.auth.getSession();
+  
+  // Method 1: Direct from session
+  if (session.session?.provider_token) {
+    console.log('Found token in session provider_token');
+    return session.session.provider_token;
+  }
+  
+  // Method 2: From user metadata
+  if (session.session?.user?.user_metadata?.provider_token) {
+    console.log('Found token in user metadata');
+    return session.session.user.user_metadata.provider_token;
+  }
+  
+  // Method 3: Try refreshing if we have a refresh token
+  if (session.session?.provider_refresh_token) {
+    console.log('Attempting to refresh token...');
+    try {
+      const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          client_id: Deno.env.get('GOOGLE_CLIENT_ID') || '',
+          client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET') || '',
+          refresh_token: session.session.provider_refresh_token,
+          grant_type: 'refresh_token',
+        }),
+      });
+      
+      if (refreshResponse.ok) {
+        const refreshData = await refreshResponse.json();
+        console.log('Token refreshed successfully');
+        return refreshData.access_token;
+      }
+    } catch (error) {
+      console.error('Token refresh failed:', error);
+    }
+  }
+  
+  console.log('No access token found');
+  return null;
+}
+
 async function processCalendarCommand(command: string, userId: string, supabase: any, userSupabase: any) {
   console.log('Processing calendar command:', command);
   
@@ -165,43 +209,11 @@ async function processCalendarCommand(command: string, userId: string, supabase:
       }
       
       try {
-        // Get the user's session and check for access token
-        const { data: session } = await userSupabase.auth.getSession();
-        console.log('Session for calendar:', {
-          hasSession: !!session.session,
-          hasUser: !!session.session?.user,
-          hasProviderToken: !!session.session?.provider_token,
-          hasProviderRefreshToken: !!session.session?.provider_refresh_token,
-          provider: session.session?.user?.app_metadata?.provider
-        });
-
-        let accessToken = session.session?.provider_token;
-
-        // If no access token in session, try to refresh
-        if (!accessToken && session.session?.provider_refresh_token) {
-          console.log('Attempting to refresh Google token...');
-          const refreshResponse = await fetch('https://oauth2.googleapis.com/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              client_id: Deno.env.get('GOOGLE_CLIENT_ID') || '',
-              client_secret: Deno.env.get('GOOGLE_CLIENT_SECRET') || '',
-              refresh_token: session.session.provider_refresh_token,
-              grant_type: 'refresh_token',
-            }),
-          });
-          
-          if (refreshResponse.ok) {
-            const refreshData = await refreshResponse.json();
-            accessToken = refreshData.access_token;
-            console.log('Token refreshed successfully');
-          }
-        }
+        const accessToken = await getGoogleAccessToken(userSupabase);
 
         if (!accessToken) {
-          console.log('No access token found in session');
           return { 
-            message: 'Please sign out and sign back in with Google to enable calendar access. Make sure to accept all permissions when prompted.', 
+            message: 'Google Calendar access not available. Please sign out and sign back in with Google, making sure to accept all permissions when prompted.', 
             action: 'auth_required' 
           };
         }
@@ -303,9 +315,7 @@ async function processEmailCommand(command: string, userId: string, supabase: an
     const [, recipient, subject] = emailMatch;
     
     try {
-      // Get access token for Gmail API
-      const { data: session } = await userSupabase.auth.getSession();
-      let accessToken = session.session?.provider_token;
+      const accessToken = await getGoogleAccessToken(userSupabase);
 
       if (!accessToken) {
         // Record the email intent without sending
@@ -347,6 +357,7 @@ async function processEmailCommand(command: string, userId: string, supabase: an
         const gmailData = await gmailResponse.json();
         
         // Record the sent email
+        const { data: session } = await userSupabase.auth.getSession();
         await supabase
           .from('emails')
           .insert({
