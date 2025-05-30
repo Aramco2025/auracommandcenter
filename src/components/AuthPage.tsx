@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -68,7 +69,7 @@ export const AuthPage = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          scopes: 'email profile openid https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/calendar',
+          scopes: 'email profile openid https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/drive.file',
           redirectTo: window.location.origin,
         },
       });
@@ -178,6 +179,14 @@ export const AuthPage = () => {
         </Tabs>
 
         <div className="mt-6">
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+            <h4 className="text-blue-800 dark:text-blue-300 font-medium mb-2">Google Workspace Integration</h4>
+            <p className="text-blue-700 dark:text-blue-200 text-sm">
+              Aura will request comprehensive access to Gmail, Calendar, and Drive to provide you with full AI assistance. 
+              This includes reading/sending emails, managing calendar events, and accessing files for better context.
+            </p>
+          </div>
+
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
@@ -210,7 +219,7 @@ export const AuthPage = () => {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Connect Google & Gmail
+            Connect Google Workspace
           </Button>
         </div>
       </Card>
