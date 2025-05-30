@@ -47,7 +47,7 @@ serve(async (req) => {
       } else if (command.toLowerCase().includes('create task') || command.toLowerCase().includes('update task') || command_type === 'task') {
         result = await processTaskCommand(command, userId, supabaseServiceClient);
       } else if (command.toLowerCase().includes('schedule') || command.toLowerCase().includes('calendar') || command.toLowerCase().includes('meeting') || command.toLowerCase().includes('what\'s on my calendar') || command_type === 'calendar') {
-        result = await processCalendarCommand(command, userId, supabaseServiceClient);
+        result = await processCalendarCommand(command, userId, supabaseServiceClient, supabaseClient);
       } else if (command.toLowerCase().includes('record note') || command_type === 'voice') {
         result = await processVoiceCommand(command, userId, supabaseServiceClient);
       } else {
@@ -96,6 +96,169 @@ serve(async (req) => {
     });
   }
 });
+
+async function processCalendarCommand(command: string, userId: string, supabase: any, userSupabase: any) {
+  console.log('Processing calendar command:', command);
+  
+  // Handle "what's on my calendar" queries
+  if (command.toLowerCase().includes('what\'s on my calendar') || command.toLowerCase().includes('calendar today') || command.toLowerCase().includes('schedule today')) {
+    try {
+      const today = new Date();
+      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+      
+      const { data: events, error } = await supabase
+        .from('calendar_events')
+        .select('*')
+        .eq('user_id', userId)
+        .gte('start_time', startOfDay.toISOString())
+        .lt('start_time', endOfDay.toISOString())
+        .order('start_time');
+
+      if (error) throw error;
+
+      if (events && events.length > 0) {
+        const eventList = events.map(event => 
+          `${event.title} at ${new Date(event.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
+        ).join(', ');
+        return { message: `Today's events: ${eventList}`, action: 'calendar_query', events };
+      } else {
+        return { message: 'No events scheduled for today', action: 'calendar_query_empty' };
+      }
+    } catch (error) {
+      console.error('Calendar query error:', error);
+      return { message: 'Calendar queried (demo mode - no events found)', action: 'calendar_query_demo' };
+    }
+  }
+  
+  // Handle schedule meeting commands - NOW WITH REAL GOOGLE CALENDAR INTEGRATION
+  if (command.toLowerCase().includes('schedule meeting') || command.toLowerCase().includes('schedule') || command.toLowerCase().includes('meeting')) {
+    const meetingMatch = command.match(/schedule.*?meeting[:\s]+(.+)/i) || command.match(/schedule[:\s]+(.+)/i);
+    if (meetingMatch) {
+      const [, details] = meetingMatch;
+      
+      // Parse time from the command (basic parsing for "tomorrow 9am", etc.)
+      let startTime = new Date();
+      let endTime = new Date();
+      
+      if (details.toLowerCase().includes('tomorrow')) {
+        startTime.setDate(startTime.getDate() + 1);
+        endTime.setDate(endTime.getDate() + 1);
+      }
+      
+      // Simple time parsing for "9am", "2pm", etc.
+      const timeMatch = details.match(/(\d{1,2})(am|pm)/i);
+      if (timeMatch) {
+        let hour = parseInt(timeMatch[1]);
+        const ampm = timeMatch[2].toLowerCase();
+        if (ampm === 'pm' && hour !== 12) hour += 12;
+        if (ampm === 'am' && hour === 12) hour = 0;
+        
+        startTime.setHours(hour, 0, 0, 0);
+        endTime.setHours(hour + 1, 0, 0, 0); // Default 1 hour duration
+      } else {
+        // Default to next available hour if no time specified
+        const now = new Date();
+        startTime.setHours(now.getHours() + 1, 0, 0, 0);
+        endTime.setHours(now.getHours() + 2, 0, 0, 0);
+      }
+      
+      try {
+        // Get the user's access token for Google Calendar
+        const { data: session } = await userSupabase.auth.getSession();
+        const accessToken = session.session?.provider_token;
+
+        if (!accessToken) {
+          return { 
+            message: 'Please re-authenticate with Google to create calendar events', 
+            action: 'auth_required' 
+          };
+        }
+
+        // Create event in Google Calendar
+        const calendarResponse = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            summary: details.trim(),
+            start: {
+              dateTime: startTime.toISOString(),
+              timeZone: Deno.env.get('TZ') || 'UTC',
+            },
+            end: {
+              dateTime: endTime.toISOString(),
+              timeZone: Deno.env.get('TZ') || 'UTC',
+            },
+          }),
+        });
+
+        const calendarData = await calendarResponse.json();
+
+        if (!calendarResponse.ok) {
+          console.error('Google Calendar API error:', calendarData);
+          throw new Error(`Failed to create calendar event: ${calendarData.error?.message || 'Unknown error'}`);
+        }
+
+        // Also store in our database for reference
+        const { data, error } = await supabase
+          .from('calendar_events')
+          .insert({
+            user_id: userId,
+            google_event_id: calendarData.id,
+            title: details.trim(),
+            start_time: startTime.toISOString(),
+            end_time: endTime.toISOString(),
+            status: 'confirmed',
+          })
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Database error:', error);
+          // Don't throw here as the Google Calendar event was created successfully
+        }
+
+        return { 
+          message: `Meeting "${details}" scheduled for ${startTime.toLocaleDateString()} at ${startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })} and added to your Google Calendar`, 
+          action: 'meeting_scheduled_google',
+          event: calendarData
+        };
+      } catch (error) {
+        console.error('Calendar command error:', error);
+        // Fallback to local storage
+        try {
+          const { data, error } = await supabase
+            .from('calendar_events')
+            .insert({
+              user_id: userId,
+              google_event_id: `local-${Date.now()}`,
+              title: details.trim(),
+              start_time: startTime.toISOString(),
+              end_time: endTime.toISOString(),
+              status: 'confirmed',
+            })
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          return { 
+            message: `Meeting "${details}" scheduled locally for ${startTime.toLocaleDateString()} at ${startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}. Note: Could not sync to Google Calendar - ${error.message}`, 
+            action: 'meeting_scheduled_local',
+            event: data
+          };
+        } catch (dbError) {
+          return { message: `Failed to schedule meeting: ${error.message}`, action: 'meeting_failed' };
+        }
+      }
+    }
+  }
+  
+  return { message: 'Calendar command processed', action: 'calendar_general' };
+}
 
 async function processEmailCommand(command: string, userId: string, supabase: any) {
   console.log('Processing email command:', command);
@@ -156,103 +319,6 @@ async function processTaskCommand(command: string, userId: string, supabase: any
   }
   
   return { message: 'Task command processed', action: 'task_general' };
-}
-
-async function processCalendarCommand(command: string, userId: string, supabase: any) {
-  console.log('Processing calendar command:', command);
-  
-  // Handle "what's on my calendar" queries
-  if (command.toLowerCase().includes('what\'s on my calendar') || command.toLowerCase().includes('calendar today') || command.toLowerCase().includes('schedule today')) {
-    try {
-      const today = new Date();
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
-      
-      const { data: events, error } = await supabase
-        .from('calendar_events')
-        .select('*')
-        .eq('user_id', userId)
-        .gte('start_time', startOfDay.toISOString())
-        .lt('start_time', endOfDay.toISOString())
-        .order('start_time');
-
-      if (error) throw error;
-
-      if (events && events.length > 0) {
-        const eventList = events.map(event => 
-          `${event.title} at ${new Date(event.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
-        ).join(', ');
-        return { message: `Today's events: ${eventList}`, action: 'calendar_query', events };
-      } else {
-        return { message: 'No events scheduled for today', action: 'calendar_query_empty' };
-      }
-    } catch (error) {
-      console.error('Calendar query error:', error);
-      return { message: 'Calendar queried (demo mode - no events found)', action: 'calendar_query_demo' };
-    }
-  }
-  
-  // Handle schedule meeting commands
-  if (command.toLowerCase().includes('schedule meeting')) {
-    const meetingMatch = command.match(/schedule meeting[:\s]+(.+)/i);
-    if (meetingMatch) {
-      const [, details] = meetingMatch;
-      
-      // Parse time from the command (basic parsing for "tomorrow 9am", etc.)
-      let startTime = new Date();
-      let endTime = new Date();
-      
-      if (details.toLowerCase().includes('tomorrow')) {
-        startTime.setDate(startTime.getDate() + 1);
-        endTime.setDate(endTime.getDate() + 1);
-      }
-      
-      // Simple time parsing for "9am", "2pm", etc.
-      const timeMatch = details.match(/(\d{1,2})(am|pm)/i);
-      if (timeMatch) {
-        let hour = parseInt(timeMatch[1]);
-        const ampm = timeMatch[2].toLowerCase();
-        if (ampm === 'pm' && hour !== 12) hour += 12;
-        if (ampm === 'am' && hour === 12) hour = 0;
-        
-        startTime.setHours(hour, 0, 0, 0);
-        endTime.setHours(hour + 1, 0, 0, 0); // Default 1 hour duration
-      } else {
-        // Default to next available hour if no time specified
-        const now = new Date();
-        startTime.setHours(now.getHours() + 1, 0, 0, 0);
-        endTime.setHours(now.getHours() + 2, 0, 0, 0);
-      }
-      
-      try {
-        const { data, error } = await supabase
-          .from('calendar_events')
-          .insert({
-            user_id: userId,
-            google_event_id: `local-${Date.now()}`,
-            title: details.trim(),
-            start_time: startTime.toISOString(),
-            end_time: endTime.toISOString(),
-            status: 'confirmed',
-          })
-          .select()
-          .single();
-
-        if (error) throw error;
-
-        return { 
-          message: `Meeting scheduled: ${details} on ${startTime.toLocaleDateString()} at ${startTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`, 
-          action: 'meeting_scheduled',
-          event: data
-        };
-      } catch (error) {
-        console.error('Calendar command error:', error);
-        return { message: `Meeting processed (demo mode): ${details}`, action: 'meeting_demo' };
-      }
-    }
-  }
-  
-  return { message: 'Calendar command processed', action: 'calendar_general' };
 }
 
 async function processVoiceCommand(command: string, userId: string, supabase: any) {

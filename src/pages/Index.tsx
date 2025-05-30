@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { QuickStats } from "@/components/QuickStats";
 import { WeeklyPulse } from "@/components/WeeklyPulse";
-import { CommandBox } from "@/components/CommandBox";
+import { ConversationalChat } from "@/components/ConversationalChat";
 import { VoiceNoteInbox } from "@/components/VoiceNoteInbox";
 import { OutreachMetrics } from "@/components/OutreachMetrics";
 import { TasksOverview } from "@/components/TasksOverview";
@@ -74,8 +74,8 @@ const Index = () => {
         {/* Quick Stats */}
         <QuickStats />
 
-        {/* Command Box */}
-        <CommandBox />
+        {/* Conversational Chat */}
+        <ConversationalChat />
 
         {/* Main Dashboard Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
