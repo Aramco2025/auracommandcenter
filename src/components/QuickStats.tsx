@@ -2,27 +2,45 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Mail, Calendar, MessageSquare } from "lucide-react";
+import { useSupabaseData } from "@/hooks/useSupabaseData";
 
 export const QuickStats = () => {
+  const { emails, events } = useSupabaseData();
+
+  // Calculate stats from real data
+  const emailsSentToday = emails.filter(email => 
+    email.is_sent && 
+    new Date(email.created_at).toDateString() === new Date().toDateString()
+  ).length;
+
+  const repliesReceived = emails.filter(email => 
+    email.is_reply && 
+    new Date(email.created_at).toDateString() === new Date().toDateString()
+  ).length;
+
+  const meetingsToday = events.filter(event =>
+    new Date(event.start_time).toDateString() === new Date().toDateString()
+  ).length;
+
   const stats = [
     {
       icon: Mail,
       label: "Emails Sent",
-      value: "24",
-      change: "+12%",
-      trend: "up"
+      value: emailsSentToday.toString(),
+      change: emailsSentToday > 0 ? "+12%" : "0%",
+      trend: emailsSentToday > 0 ? "up" : "neutral"
     },
     {
       icon: MessageSquare,
       label: "Replies",
-      value: "8",
-      change: "+5%",
-      trend: "up"
+      value: repliesReceived.toString(),
+      change: repliesReceived > 0 ? "+5%" : "0%",
+      trend: repliesReceived > 0 ? "up" : "neutral"
     },
     {
       icon: Calendar,
       label: "Meetings Today",
-      value: "3",
+      value: meetingsToday.toString(),
       change: "0%",
       trend: "neutral"
     }

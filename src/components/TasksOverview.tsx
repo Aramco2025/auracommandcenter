@@ -2,14 +2,10 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useSupabaseData } from "@/hooks/useSupabaseData";
 
 export const TasksOverview = () => {
-  const tasks = [
-    { name: "Q4 Strategy Review", status: "In Progress", progress: 75, urgent: false },
-    { name: "Client Proposal", status: "To Do", progress: 0, urgent: true },
-    { name: "Team 1:1s", status: "Done", progress: 100, urgent: false },
-    { name: "Product Demo Prep", status: "In Progress", progress: 45, urgent: true }
-  ];
+  const { tasks } = useSupabaseData();
 
   const statusCounts = {
     "To Do": tasks.filter(t => t.status === "To Do").length,
@@ -40,12 +36,12 @@ export const TasksOverview = () => {
       </div>
       
       <div className="space-y-3">
-        {tasks.map((task, index) => (
+        {tasks.slice(0, 4).map((task, index) => (
           <div key={index} className="p-3 bg-background rounded-lg border border-border hover:bg-accent/50 transition-all duration-200">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">{task.name}</span>
-                {task.urgent && (
+                <span className="text-sm font-medium text-foreground">{task.title}</span>
+                {task.priority === "High" && (
                   <Badge variant="destructive" className="text-xs">Urgent</Badge>
                 )}
               </div>
@@ -53,7 +49,7 @@ export const TasksOverview = () => {
                 {task.status}
               </Badge>
             </div>
-            {task.status !== "Done" && task.status !== "To Do" && (
+            {task.status === "In Progress" && task.progress !== null && (
               <Progress value={task.progress} className="h-1 mt-2" />
             )}
           </div>

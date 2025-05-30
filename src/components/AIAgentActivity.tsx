@@ -2,49 +2,21 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { useSupabaseData } from "@/hooks/useSupabaseData";
 
 export const AIAgentActivity = () => {
-  const activities = [
-    {
-      agent: "Email Assistant",
-      task: "Processing outreach sequences",
-      progress: 85,
-      status: "active",
-      lastAction: "Sent 3 follow-ups"
-    },
-    {
-      agent: "Calendar Optimizer",
-      task: "Analyzing meeting patterns",
-      progress: 60,
-      status: "active",
-      lastAction: "Rescheduled 2 conflicts"
-    },
-    {
-      agent: "Task Prioritizer",
-      task: "Updating Notion database",
-      progress: 95,
-      status: "completing",
-      lastAction: "Updated 8 task statuses"
-    },
-    {
-      agent: "Lead Scorer",
-      task: "Analyzing new prospects",
-      progress: 40,
-      status: "active",
-      lastAction: "Scored 12 new leads"
-    }
-  ];
+  const { aiActivities } = useSupabaseData();
 
   const weeklyStats = {
-    totalTasks: 156,
-    completed: 142,
-    saved: "12.5 hours"
+    totalTasks: aiActivities.length,
+    completed: aiActivities.filter(a => a.status === 'completed').length,
+    saved: "12.5 hours" // This could be calculated based on task types
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active": return "default";
-      case "completing": return "secondary";
+      case "completed": return "secondary";
       case "idle": return "outline";
       default: return "outline";
     }
@@ -55,7 +27,9 @@ export const AIAgentActivity = () => {
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-foreground">AI Agent Activity</h3>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-xs">4 active</Badge>
+          <Badge variant="outline" className="text-xs">
+            {aiActivities.filter(a => a.status === 'active').length} active
+          </Badge>
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
         </div>
       </div>
@@ -77,29 +51,35 @@ export const AIAgentActivity = () => {
       </div>
       
       <div className="space-y-4">
-        {activities.map((activity, index) => (
+        {aiActivities.slice(0, 4).map((activity, index) => (
           <div key={index} className="p-4 bg-background rounded-lg border border-border">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-foreground">{activity.agent}</span>
+                <span className="text-sm font-medium text-foreground">{activity.agent_name}</span>
               </div>
               <Badge variant={getStatusColor(activity.status)} className="text-xs">
                 {activity.status}
               </Badge>
             </div>
             
-            <p className="text-sm text-muted-foreground mb-2">{activity.task}</p>
+            <p className="text-sm text-muted-foreground mb-2">{activity.task_description}</p>
             
             <div className="space-y-2">
               <Progress value={activity.progress} className="h-2" />
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">{activity.lastAction}</span>
+                <span className="text-muted-foreground">{activity.last_action}</span>
                 <span className="text-muted-foreground">{activity.progress}%</span>
               </div>
             </div>
           </div>
         ))}
+
+        {aiActivities.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-sm">No AI agent activity yet</p>
+          </div>
+        )}
       </div>
     </Card>
   );
