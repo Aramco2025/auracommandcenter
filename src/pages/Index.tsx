@@ -15,9 +15,12 @@ import { OutreachMetrics } from "@/components/OutreachMetrics";
 import { TasksOverview } from "@/components/TasksOverview";
 import { CalendarPreview } from "@/components/CalendarPreview";
 import { AIAgentActivity } from "@/components/AIAgentActivity";
+import { UserMenu } from "@/components/UserMenu";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
+  const { user } = useAuth();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -48,6 +51,7 @@ const Index = () => {
               <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
               Live
             </Badge>
+            <UserMenu />
           </div>
         </div>
 
