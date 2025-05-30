@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, Bot, User } from "lucide-react";
+import { MessageSquare, Send, Bot, User, AlertCircle } from "lucide-react";
 import { useRealCommandProcessor } from "@/hooks/useRealSupabaseData";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,7 +31,7 @@ export const ConversationalChat = () => {
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const { processCommand, isProcessing } = useRealCommandProcessor();
-  const { user } = useAuth();
+  const { user, hasGoogleToken } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -100,10 +100,19 @@ export const ConversationalChat = () => {
       <div className="flex items-center gap-3 mb-4">
         <MessageSquare className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold text-foreground">AI Assistant</h3>
-        <Badge variant="secondary" className="text-xs">
-          Connected to Google & Notion
+        <Badge variant={hasGoogleToken ? "secondary" : "destructive"} className="text-xs">
+          {hasGoogleToken ? "Google Connected" : "Google Disconnected"}
         </Badge>
       </div>
+
+      {!hasGoogleToken && (
+        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-yellow-600" />
+          <p className="text-sm text-yellow-700">
+            Please sign out and sign back in with Google to enable calendar and email features.
+          </p>
+        </div>
+      )}
       
       <ScrollArea className="flex-1 pr-4 mb-4">
         <div className="space-y-4">
