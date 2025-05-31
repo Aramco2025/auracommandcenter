@@ -6,44 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Zap, Brain, MessageCircle, Calendar, Mail, FileText, BarChart3, Star, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 
 const Landing = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     if (user) {
       navigate("/");
     }
   }, [user, navigate]);
-
-  const handleCheckout = async () => {
-    if (!user) {
-      toast.error("Please sign in to subscribe");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId: 'price_aura_monthly' } // You'll need to create this in Stripe
-      });
-
-      if (error) throw error;
-
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast.error("Failed to start checkout. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const features = [
     {
@@ -135,22 +107,14 @@ const Landing = () => {
             <span className="block mt-2 text-purple-300">Slash 60% of your admin with conversational AI.</span>
           </p>
 
-          <div className="flex flex-col md:flex-row gap-4 justify-center mb-16">
+          <div className="flex justify-center mb-16">
             <Button 
               size="lg" 
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 text-lg"
-              onClick={handleCheckout}
-              disabled={isLoading}
+              onClick={() => navigate("/auth")}
             >
-              {isLoading ? "Processing..." : "Activate Aura Now"}
+              Activate Aura Now
               <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="border-gray-600 text-gray-300 hover:bg-gray-800 px-8 py-4 text-lg"
-            >
-              Watch Demo
             </Button>
           </div>
 
@@ -229,10 +193,9 @@ const Landing = () => {
               
               <Button 
                 className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white py-6 text-lg"
-                onClick={handleCheckout}
-                disabled={isLoading}
+                onClick={() => navigate("/auth")}
               >
-                {isLoading ? "Processing..." : "Start Your Journey"}
+                Start Your Journey
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
               
