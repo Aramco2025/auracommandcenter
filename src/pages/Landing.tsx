@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -125,7 +126,7 @@ const Landing = () => {
               className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white px-10 py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300"
               onClick={() => navigate("/auth")}
             >
-              Start Free Trial
+              Get Started Now
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
             <Button 
@@ -153,15 +154,15 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* Hero Image - Updated positioning */}
-          <div className="relative mx-auto w-96 h-96 mb-20">
+          {/* Hero Image - Better positioning to show full head */}
+          <div className="relative mx-auto w-80 h-96 mb-20">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-3xl rotate-6 opacity-20 animate-pulse"></div>
             <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-emerald-400 rounded-3xl -rotate-3 opacity-15 animate-pulse delay-75"></div>
             <img 
               src="/lovable-uploads/4e6d3065-11ae-498a-a7d4-32dcaf322903.png"
               alt="AI-Powered Professional"
-              className="relative w-full h-full object-cover object-center rounded-3xl shadow-2xl border-4 border-white"
-              style={{ objectPosition: 'center top' }}
+              className="relative w-full h-full object-cover rounded-3xl shadow-2xl border-4 border-white"
+              style={{ objectPosition: 'center 15%' }}
             />
           </div>
         </section>
@@ -269,13 +270,13 @@ const Landing = () => {
                 className="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300"
                 onClick={() => navigate("/auth")}
               >
-                Start Your Free Trial
+                Subscribe Now
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
               
               <div className="text-center space-y-2">
                 <p className="text-slate-500 text-sm">
-                  ✓ 14-day free trial • ✓ No credit card required • ✓ Cancel anytime
+                  ✓ Instant access • ✓ Cancel anytime
                 </p>
                 <p className="text-slate-400 text-xs">
                   30-day money-back guarantee
