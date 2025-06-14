@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { QuickStats } from "@/components/QuickStats";
 import { WeeklyPulse } from "@/components/WeeklyPulse";
 import { ConversationalChat } from "@/components/ConversationalChat";
+import { CommandBox } from "@/components/CommandBox";
 import { VoiceNoteInbox } from "@/components/VoiceNoteInbox";
 import { OutreachMetrics } from "@/components/OutreachMetrics";
 import { TasksOverview } from "@/components/TasksOverview";
@@ -78,7 +79,7 @@ const Index = () => {
             ) : (
               <Badge variant="outline" className="animate-pulse-slow">
                 <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                Free Trial
+                Basic Plan
               </Badge>
             )}
             <Button variant="outline" size="sm" onClick={() => navigate("/billing")}>
@@ -94,6 +95,9 @@ const Index = () => {
 
         {/* Quick Stats */}
         <QuickStats />
+
+        {/* Command Box */}
+        <CommandBox />
 
         {/* Conversational Chat */}
         <ConversationalChat />

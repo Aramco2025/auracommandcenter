@@ -27,13 +27,19 @@ export const CommandBox = () => {
     e.preventDefault();
     if (command.trim() && !isProcessing && user) {
       try {
+        console.log('Submitting command:', command);
         const result = await processCommand(command);
+        console.log('Command result:', result);
         toast.success(result.message || "Command processed successfully");
         setCommand("");
       } catch (error) {
-        toast.error("Failed to process command");
         console.error("Command error:", error);
+        toast.error("Failed to process command");
       }
+    } else if (!user) {
+      toast.error("Please sign in to use commands");
+    } else if (!command.trim()) {
+      toast.error("Please enter a command");
     }
   };
 
@@ -41,19 +47,22 @@ export const CommandBox = () => {
     setIsListening(!isListening);
     if (!isListening) {
       // Start voice recognition
-      if ('webkitSpeechRecognition' in window) {
-        const recognition = new (window as any).webkitSpeechRecognition();
+      if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+        const recognition = new SpeechRecognition();
         recognition.continuous = false;
         recognition.interimResults = false;
         recognition.lang = 'en-US';
 
         recognition.onresult = (event: any) => {
           const transcript = event.results[0][0].transcript;
+          console.log('Voice transcript:', transcript);
           setCommand(transcript);
           setIsListening(false);
         };
 
-        recognition.onerror = () => {
+        recognition.onerror = (event: any) => {
+          console.error('Voice recognition error:', event.error);
           setIsListening(false);
           toast.error("Voice recognition failed");
         };
@@ -62,16 +71,35 @@ export const CommandBox = () => {
           setIsListening(false);
         };
 
-        recognition.start();
+        try {
+          recognition.start();
+        } catch (error) {
+          console.error('Failed to start recognition:', error);
+          setIsListening(false);
+          toast.error("Failed to start voice recognition");
+        }
       } else {
-        toast.error("Voice recognition not supported");
+        toast.error("Voice recognition not supported in this browser");
         setIsListening(false);
       }
     }
   };
 
   if (!user) {
-    return null;
+    return (
+      <Card className="p-6 bg-card border-border">
+        <div className="flex items-center gap-3 mb-4">
+          <MessageSquare className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-foreground">Command Centre</h3>
+          <Badge variant="secondary" className="text-xs">
+            Sign in to activate
+          </Badge>
+        </div>
+        <div className="text-center text-muted-foreground">
+          <p>Please sign in to use the Command Centre</p>
+        </div>
+      </Card>
+    );
   }
 
   return (
