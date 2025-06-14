@@ -46,12 +46,12 @@ const Landing = () => {
     {
       icon: <Brain className="w-6 h-6" />,
       title: "Smart Memory",
-      description: "Aura remembers patterns and acts on your preferences."
+      description: "Optio remembers patterns and acts on your preferences."
     }
   ];
 
   const benefits = [
-    "Full access to the Aura chat assistant",
+    "Full access to the Optio chat assistant",
     "Command Center dashboard",
     "Weekly performance reports",
     "Gmail & Google Calendar integration",
@@ -78,7 +78,7 @@ const Landing = () => {
                 <Brain className="w-6 h-6 text-white" />
               </div>
               <span className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                AURA
+                OPTIO
               </span>
             </div>
             <Button 
@@ -113,7 +113,7 @@ const Landing = () => {
               className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-4 text-lg"
               onClick={() => navigate("/auth")}
             >
-              Activate Aura Now
+              Activate Optio Now
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
           </div>
@@ -122,7 +122,7 @@ const Landing = () => {
           <div className="relative mx-auto w-80 h-80 mb-16">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-pulse opacity-20"></div>
             <img 
-              src="https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&w=800&q=80"
+              src="https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?auto=format&fit=crop&w=800&q=80"
               alt="AI Assistant"
               className="w-full h-full object-cover rounded-full border-4 border-purple-500/30 shadow-2xl"
             />
@@ -133,7 +133,7 @@ const Landing = () => {
         {/* Features Grid */}
         <section className="container mx-auto px-6 py-20">
           <h2 className="text-4xl font-bold text-center mb-16 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-            What Aura Does
+            What Optio Does
           </h2>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -171,7 +171,7 @@ const Landing = () => {
               <div className="flex justify-center mb-4">
                 <Badge className="bg-purple-500 text-white">Most Popular</Badge>
               </div>
-              <CardTitle className="text-3xl text-white">Aura Pro</CardTitle>
+              <CardTitle className="text-3xl text-white">Optio Pro</CardTitle>
               <div className="text-5xl font-bold text-white mt-4">
                 £60
                 <span className="text-xl text-gray-400 font-normal">/month</span>
@@ -232,10 +232,10 @@ const Landing = () => {
               <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
                 <Brain className="w-5 h-5 text-white" />
               </div>
-              <span className="text-lg font-semibold text-gray-300">AURA Command Center</span>
+              <span className="text-lg font-semibold text-gray-300">OPTIO Command Center</span>
             </div>
             <p className="text-gray-400 text-sm">
-              © 2024 Aura. Built for the AI-native leader.
+              © 2024 Optio. Built for the AI-native leader.
             </p>
           </div>
         </footer>
