@@ -118,12 +118,12 @@ const Landing = () => {
             </Button>
           </div>
 
-          {/* AI Assistant Image */}
+          {/* Professional Business Image */}
           <div className="relative mx-auto w-80 h-80 mb-16">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full animate-pulse opacity-20"></div>
             <img 
-              src="https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?auto=format&fit=crop&w=800&q=80"
-              alt="AI Assistant"
+              src="/lovable-uploads/738600bd-3503-4de0-8624-3122ad4ed9dd.png"
+              alt="Professional Business Leader"
               className="w-full h-full object-cover rounded-full border-4 border-purple-500/30 shadow-2xl"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-purple-900/50 to-transparent rounded-full"></div>
