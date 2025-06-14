@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, Bot, User, AlertCircle, RefreshCw } from "lucide-react";
+import { MessageSquare, Send, Bot, User, AlertCircle, RefreshCw, Trophy, Target, Zap, Calendar, Mail, CheckCircle2, TrendingUp, Star } from "lucide-react";
 import { useRealCommandProcessor } from "@/hooks/useRealSupabaseData";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,7 +15,17 @@ interface Message {
   content: string;
   sender: 'user' | 'ai';
   timestamp: Date;
-  type?: 'command' | 'response' | 'error';
+  type?: 'command' | 'response' | 'error' | 'achievement';
+  actionType?: string;
+}
+
+interface ProductivityScore {
+  tasksCompleted: number;
+  emailsSent: number;
+  meetingsScheduled: number;
+  totalActions: number;
+  streak: number;
+  level: number;
 }
 
 export const ConversationalChat = () => {
@@ -23,13 +33,21 @@ export const ConversationalChat = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: "Hey there! 👋 I'm Optio, your AI command center. I'm here to make your life easier by handling your Gmail, Calendar, and Notion tasks.\n\nJust tell me what you need in plain English! Here are some things I can do:\n\n• Schedule meetings: \"Book a team standup for tomorrow at 9am\"\n• Send emails: \"Email Sarah about the project deadline\"\n• Create tasks: \"Add 'Review budget proposal' to my tasks\"\n• Check calendar: \"What's on my schedule today?\"\n\nWhat would you like me to help you with?",
+      content: "🚀 **Welcome to your AI Command Center!**\n\nI'm Optio, your productivity powerhouse. I don't just chat – I **execute**. Here's what makes me different:\n\n✨ **Instant Actions**: Tell me what you need, watch it happen\n📊 **Smart Tracking**: Every action builds your productivity score\n🎯 **Goal Crushing**: Turn conversations into completed tasks\n\n**Quick Commands:**\n• `Schedule team sync tomorrow 2pm`\n• `Email john@company.com about Q4 review`\n• `Create task: Finish presentation slides`\n• `What's my productivity score?`\n\nReady to level up? What's your first move? 💪",
       sender: 'ai',
       timestamp: new Date(),
       type: 'response'
     }
   ]);
   const [isTyping, setIsTyping] = useState(false);
+  const [productivityScore, setProductivityScore] = useState<ProductivityScore>({
+    tasksCompleted: 0,
+    emailsSent: 0,
+    meetingsScheduled: 0,
+    totalActions: 0,
+    streak: 0,
+    level: 1
+  });
   const { processCommand, isProcessing } = useRealCommandProcessor();
   const { user, hasGoogleToken, refreshGoogleToken } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -42,81 +60,126 @@ export const ConversationalChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  const handleRefreshToken = async () => {
-    const success = await refreshGoogleToken();
-    if (success) {
-      toast.success("Google connection refreshed successfully!");
-    } else {
-      toast.error("Failed to refresh Google connection. Please sign out and sign back in.");
-    }
+  const updateProductivityScore = (actionType: string) => {
+    setProductivityScore(prev => {
+      const newScore = { ...prev };
+      newScore.totalActions += 1;
+      newScore.streak += 1;
+
+      switch (actionType) {
+        case 'email_sent':
+          newScore.emailsSent += 1;
+          break;
+        case 'meeting_scheduled_google':
+        case 'meeting_scheduled_local':
+          newScore.meetingsScheduled += 1;
+          break;
+        case 'task_created_notion':
+        case 'task_created_local':
+          newScore.tasksCompleted += 1;
+          break;
+      }
+
+      // Level up system
+      const newLevel = Math.floor(newScore.totalActions / 5) + 1;
+      if (newLevel > newScore.level) {
+        newScore.level = newLevel;
+        // Add achievement message
+        setTimeout(() => {
+          const achievementMessage: Message = {
+            id: Date.now().toString() + '_achievement',
+            content: `🎉 **LEVEL UP!** You've reached Level ${newLevel}! Your productivity game is strong! 💪`,
+            sender: 'ai',
+            timestamp: new Date(),
+            type: 'achievement'
+          };
+          setMessages(prev => [...prev, achievementMessage]);
+        }, 1000);
+      }
+
+      return newScore;
+    });
+  };
+
+  const getScoreEmoji = (score: number) => {
+    if (score >= 20) return "🔥";
+    if (score >= 15) return "⚡";
+    if (score >= 10) return "🚀";
+    if (score >= 5) return "💪";
+    return "🌱";
   };
 
   const getIntelligentResponse = (result: any, originalCommand: string) => {
-    // Context-aware responses based on command type and result
-    const commandType = result.action || 'general';
+    const actionType = result.action || 'general';
     
-    switch (commandType) {
+    // Update score for successful actions
+    if (actionType !== 'general_processing' && actionType !== 'auth_required') {
+      updateProductivityScore(actionType);
+    }
+    
+    switch (actionType) {
       case 'email_sent':
-        const emailResponses = [
-          `✉️ Perfect! I've sent that email for you. The recipient should receive it shortly.`,
-          `📧 Done! Your email is on its way. Is there anything else you'd like me to help with?`,
-          `✅ Email delivered successfully! I've also saved a copy in your sent items.`
-        ];
-        return emailResponses[Math.floor(Math.random() * emailResponses.length)];
+        return `📧 **Email Delivered!** ✅\n\nYour message is flying through cyberspace to the recipient. Nice work on staying connected!\n\n*+1 Email Action • Productivity Streak: ${productivityScore.streak + 1}*`;
         
       case 'meeting_scheduled_google':
-        return `📅 Excellent! I've created that meeting in your Google Calendar. All attendees will receive calendar invitations automatically. The meeting details are all set up and ready to go!`;
+        return `📅 **Meeting Locked In!** 🎯\n\nYour calendar event is live and invitations are sent. Time to make things happen!\n\n*+1 Calendar Action • You're crushing it!*`;
         
       case 'task_created_notion':
-        return `📝 Task created! I've added "${originalCommand.match(/create task[:\s]+(.+)/i)?.[1] || 'that task'}" to your Notion workspace. You can find it in your tasks database and update it anytime.`;
+        return `✅ **Task Created!** 📝\n\nAdded "${originalCommand.match(/create task[:\s]+(.+)/i)?.[1] || 'that task'}" to your workspace. Time to execute!\n\n*+1 Task Action • Building momentum!*`;
         
       case 'calendar_query':
       case 'calendar_query_empty':
         if (result.events && result.events.length > 0) {
-          return `📅 Here's what I found on your calendar:\n\n${result.events.map((event: any) => 
-            `• ${event.title} at ${new Date(event.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
-          ).join('\n')}\n\nNeed me to reschedule anything or add new events?`;
+          return `📅 **Your Schedule Snapshot** 🎯\n\n${result.events.map((event: any) => 
+            `🕐 **${event.title}** at ${new Date(event.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
+          ).join('\n')}\n\nReady to own your day? Need me to adjust anything?`;
         } else {
-          return `📅 You're all clear today! No events scheduled. Perfect time to focus on important work or maybe schedule that meeting you've been putting off?`;
+          return `📅 **Clear Runway Ahead!** ✨\n\nNo scheduled events today. Perfect opportunity to tackle those big projects or schedule that important meeting!\n\n*Pro tip: Use this time wisely!*`;
         }
         
       case 'auth_required':
-        return `🔐 I need access to your Google account to handle that request. Could you sign out and sign back in with Google? Make sure to accept all permissions so I can access your calendar and email.`;
-        
-      case 'email_draft_auth_required':
-        return `📧 I've prepared that email as a draft, but I need Google access to actually send it. Once you reconnect, I can send it right away!`;
-        
-      case 'meeting_scheduled_local':
-        return `📅 I've scheduled that meeting locally, but couldn't sync it to Google Calendar right now. Once your Google connection is restored, I can sync it properly.`;
+        return `🔐 **Quick Setup Needed** ⚡\n\nI need Google access to unleash my full power. Sign out and back in with Google permissions to activate all features!\n\n*Almost there – let's get you connected!*`;
         
       case 'general_processing':
-        // Make general responses much more intelligent
-        const generalResponses = [
-          `🤔 I understand you want me to help with "${originalCommand}". Could you give me a bit more detail about what specifically you'd like me to do?`,
-          `💭 Interesting request! To make sure I handle this perfectly, could you clarify exactly what action you'd like me to take?`,
-          `🎯 I'm ready to help with that! Just need a bit more context - what would you like the end result to be?`
+        const responses = [
+          `🤔 **Getting Specific** 💭\n\nI'm ready to execute "${originalCommand}" but need more details to deliver exactly what you need. What's the end goal?`,
+          `🎯 **Clarification Mode** ✨\n\nI understand the intent behind "${originalCommand}" – help me nail the specifics so I can make it happen perfectly!`,
+          `💡 **Detail Check** 🔍\n\nGreat request! Just need a bit more context about "${originalCommand}" to ensure I execute this flawlessly.`
         ];
-        return generalResponses[Math.floor(Math.random() * generalResponses.length)];
+        return responses[Math.floor(Math.random() * responses.length)];
         
       default:
-        // Fallback with more personality
-        return `✅ Got it! I've processed your request. ${result.message || ''} Let me know if you need any follow-up actions!`;
+        return `✅ **Action Completed!** 🚀\n\n${result.message || 'Task executed successfully!'}\n\n*Keep the momentum going – what's next?*`;
     }
   };
 
-  const getErrorResponse = (error: any, originalCommand: string) => {
-    const errorResponses = [
-      `🤔 Hmm, I ran into an issue with "${originalCommand}". Could you try rephrasing that request? I want to make sure I understand exactly what you need.`,
-      `⚠️ Something went wrong on my end while processing that command. Let me try a different approach - could you break that down into smaller steps?`,
-      `💭 I'm having trouble with that specific request. Could you try asking in a different way? I'm here to help and want to get this right!`
-    ];
-    
-    return errorResponses[Math.floor(Math.random() * errorResponses.length)];
+  const handleRefreshToken = async () => {
+    const success = await refreshGoogleToken();
+    if (success) {
+      toast.success("🔥 Google connection restored!");
+    } else {
+      toast.error("Connection failed. Please sign out and back in.");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !isProcessing && user) {
+      
+      // Check for productivity score query
+      if (message.toLowerCase().includes('productivity score') || message.toLowerCase().includes('my score')) {
+        const scoreMessage: Message = {
+          id: Date.now().toString(),
+          content: `📊 **Your Productivity Scorecard** ${getScoreEmoji(productivityScore.totalActions)}\n\n🎯 **Level ${productivityScore.level}** • **${productivityScore.totalActions} Total Actions**\n\n📧 Emails Sent: **${productivityScore.emailsSent}**\n📅 Meetings Scheduled: **${productivityScore.meetingsScheduled}**\n✅ Tasks Created: **${productivityScore.tasksCompleted}**\n🔥 Current Streak: **${productivityScore.streak}**\n\n*${productivityScore.totalActions < 5 ? "Just getting started! Keep going!" : productivityScore.totalActions < 15 ? "Great momentum! You're building habits!" : "Productivity master! You're on fire! 🔥"}*`,
+          sender: 'ai',
+          timestamp: new Date(),
+          type: 'response'
+        };
+        setMessages(prev => [...prev, scoreMessage]);
+        setMessage("");
+        return;
+      }
+
       const userMessage: Message = {
         id: Date.now().toString(),
         content: message,
@@ -138,35 +201,33 @@ export const ConversationalChat = () => {
           content: getIntelligentResponse(result, originalCommand),
           sender: 'ai',
           timestamp: new Date(),
-          type: 'response'
+          type: 'response',
+          actionType: result.action
         };
 
         setMessages(prev => [...prev, aiResponse]);
         
-        // More specific toast notifications
+        // Enhanced toast notifications
         if (result.action) {
           if (result.action.includes('sent')) {
-            toast.success("📧 Email sent successfully!");
+            toast.success("📧 Email sent! +1 to your score");
           } else if (result.action.includes('scheduled')) {
-            toast.success("📅 Meeting scheduled!");
+            toast.success("📅 Meeting scheduled! Productivity +1");
           } else if (result.action.includes('created')) {
-            toast.success("📝 Task created!");
-          } else if (result.action.includes('auth_required')) {
-            toast.error("🔐 Google authentication required");
+            toast.success("✅ Task created! You're on fire!");
           }
         }
       } catch (error) {
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
-          content: getErrorResponse(error, originalCommand),
+          content: `⚠️ **Oops!** Something went sideways with "${originalCommand}"\n\nLet's try a different approach – I'm here to make this work! 💪`,
           sender: 'ai',
           timestamp: new Date(),
           type: 'error'
         };
         
         setMessages(prev => [...prev, errorMessage]);
-        toast.error("❌ Something went wrong - let's try that again");
-        console.error("Chat error:", error);
+        toast.error("⚠️ Let's try that again!");
       } finally {
         setIsTyping(false);
       }
@@ -178,68 +239,119 @@ export const ConversationalChat = () => {
   }
 
   return (
-    <Card className="p-6 bg-card border-border h-[600px] flex flex-col">
-      <div className="flex items-center gap-3 mb-4">
-        <MessageSquare className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold text-foreground">Chat with Optio</h3>
-        <Badge variant={hasGoogleToken ? "secondary" : "destructive"} className="text-xs">
-          {hasGoogleToken ? "Google Connected" : "Google Disconnected"}
-        </Badge>
-        {!hasGoogleToken && (
-          <Button variant="outline" size="sm" onClick={handleRefreshToken}>
-            <RefreshCw className="w-3 h-3 mr-1" />
-            Refresh
-          </Button>
-        )}
+    <Card className="p-0 bg-gradient-to-br from-slate-50 to-blue-50 border-2 border-blue-200 h-[700px] flex flex-col overflow-hidden">
+      {/* Header with Scorecard */}
+      <div className="p-6 bg-gradient-to-r from-blue-600 to-emerald-600 text-white">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
+              <MessageSquare className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold">AI Command Center</h3>
+              <p className="text-blue-100 text-sm">Execution Mode: Active</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant={hasGoogleToken ? "secondary" : "destructive"} className="text-xs">
+              {hasGoogleToken ? "🟢 Connected" : "🔴 Disconnected"}
+            </Badge>
+            {!hasGoogleToken && (
+              <Button variant="outline" size="sm" onClick={handleRefreshToken} className="text-white border-white/30 hover:bg-white/20">
+                <RefreshCw className="w-3 h-3 mr-1" />
+                Fix
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Live Scorecard */}
+        <div className="grid grid-cols-4 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold">{productivityScore.level}</div>
+            <div className="text-xs text-blue-100">Level</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold">{productivityScore.totalActions}</div>
+            <div className="text-xs text-blue-100">Actions</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold">{productivityScore.streak}</div>
+            <div className="text-xs text-blue-100">Streak</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl">{getScoreEmoji(productivityScore.totalActions)}</div>
+            <div className="text-xs text-blue-100">Status</div>
+          </div>
+        </div>
       </div>
 
       {!hasGoogleToken && (
-        <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 text-yellow-600" />
-          <p className="text-sm text-yellow-700">
-            I need Google access for calendar and email features. Please sign out and sign back in with Google!
-          </p>
+        <div className="mx-6 mt-4 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-3">
+          <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0" />
+          <div>
+            <p className="text-sm font-medium text-yellow-800">⚡ Power Mode Locked</p>
+            <p className="text-xs text-yellow-700">Connect Google to unlock email & calendar superpowers!</p>
+          </div>
         </div>
       )}
       
-      <ScrollArea className="flex-1 pr-4 mb-4">
-        <div className="space-y-4">
+      <ScrollArea className="flex-1 px-6 py-4">
+        <div className="space-y-6">
           {messages.map((msg) => (
-            <div key={msg.id} className={`flex gap-3 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+            <div key={msg.id} className={`flex gap-4 ${msg.sender === 'user' ? 'flex-row-reverse' : ''}`}>
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
                 msg.sender === 'user' 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-secondary text-secondary-foreground'
+                  ? 'bg-gradient-to-br from-blue-500 to-emerald-500 text-white' 
+                  : msg.type === 'achievement'
+                  ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-white'
+                  : msg.type === 'error'
+                  ? 'bg-red-100 text-red-600'
+                  : 'bg-gradient-to-br from-slate-600 to-slate-700 text-white'
               }`}>
-                {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                {msg.sender === 'user' ? (
+                  <User className="w-5 h-5" />
+                ) : msg.type === 'achievement' ? (
+                  <Trophy className="w-5 h-5" />
+                ) : (
+                  <Bot className="w-5 h-5" />
+                )}
               </div>
-              <div className={`flex-1 max-w-[80%] ${msg.sender === 'user' ? 'text-right' : ''}`}>
-                <div className={`p-3 rounded-lg ${
+              <div className={`flex-1 max-w-[85%] ${msg.sender === 'user' ? 'text-right' : ''}`}>
+                <div className={`p-4 rounded-2xl ${
                   msg.sender === 'user' 
-                    ? 'bg-primary text-primary-foreground ml-auto' 
+                    ? 'bg-gradient-to-br from-blue-500 to-emerald-500 text-white ml-auto shadow-lg' 
                     : msg.type === 'error'
-                    ? 'bg-destructive/10 text-destructive border border-destructive/20'
-                    : 'bg-muted'
+                    ? 'bg-red-50 text-red-800 border border-red-200'
+                    : msg.type === 'achievement'
+                    ? 'bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-300 text-yellow-800'
+                    : 'bg-white border border-slate-200 shadow-sm'
                 }`}>
-                  <p className="text-sm whitespace-pre-line">{msg.content}</p>
+                  <div className="text-sm whitespace-pre-line leading-relaxed">{msg.content}</div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {msg.timestamp.toLocaleTimeString()}
-                </p>
+                <div className="flex items-center gap-2 mt-2 text-xs text-slate-500">
+                  <span>{msg.timestamp.toLocaleTimeString()}</span>
+                  {msg.actionType && msg.actionType !== 'general_processing' && (
+                    <Badge variant="outline" className="text-xs">
+                      <CheckCircle2 className="w-3 h-3 mr-1" />
+                      Action Completed
+                    </Badge>
+                  )}
+                </div>
               </div>
             </div>
           ))}
           
           {isTyping && (
-            <div className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center">
-                <Bot className="w-4 h-4" />
+            <div className="flex gap-4">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-600 to-slate-700 text-white flex items-center justify-center">
+                <Bot className="w-5 h-5" />
               </div>
-              <div className="bg-muted p-3 rounded-lg">
-                <div className="flex space-x-1">
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                  <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-sm">
+                <div className="flex space-x-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                 </div>
               </div>
             </div>
@@ -248,23 +360,61 @@ export const ConversationalChat = () => {
         <div ref={messagesEndRef} />
       </ScrollArea>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <Input
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Ask me to schedule meetings, send emails, create tasks..."
-          className="flex-1 bg-background border-border"
-          disabled={isProcessing}
-        />
-        <Button type="submit" size="icon" disabled={isProcessing || !message.trim()}>
-          <Send className="w-4 h-4" />
-        </Button>
-      </form>
+      {/* Enhanced Input Area */}
+      <div className="p-6 bg-white border-t border-slate-200">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <div className="flex gap-3">
+            <Input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              placeholder="Tell me what to execute... (e.g., 'Schedule team sync tomorrow 2pm')"
+              className="flex-1 bg-slate-50 border-slate-300 focus:border-blue-500 focus:ring-blue-500 h-12 px-4"
+              disabled={isProcessing}
+            />
+            <Button 
+              type="submit" 
+              size="lg"
+              disabled={isProcessing || !message.trim()}
+              className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 h-12 px-6"
+            >
+              <Send className="w-5 h-5" />
+            </Button>
+          </div>
 
-      <div className="mt-2">
-        <p className="text-xs text-muted-foreground text-center">
-          Try: "What's on my calendar today?" • "Send email to john@example.com about meeting" • "Create task: Review project"
-        </p>
+          {/* Quick Action Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              onClick={() => setMessage("What's on my calendar today?")}
+              className="text-xs"
+            >
+              <Calendar className="w-3 h-3 mr-1" />
+              Check Calendar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              onClick={() => setMessage("What's my productivity score?")}
+              className="text-xs"
+            >
+              <TrendingUp className="w-3 h-3 mr-1" />
+              My Score
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              type="button"
+              onClick={() => setMessage("Create task: ")}
+              className="text-xs"
+            >
+              <Target className="w-3 h-3 mr-1" />
+              New Task
+            </Button>
+          </div>
+        </form>
       </div>
     </Card>
   );
