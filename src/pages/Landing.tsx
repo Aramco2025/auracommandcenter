@@ -153,14 +153,15 @@ const Landing = () => {
             </div>
           </div>
 
-          {/* Hero Image */}
+          {/* Hero Image - Updated positioning */}
           <div className="relative mx-auto w-96 h-96 mb-20">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-3xl rotate-6 opacity-20 animate-pulse"></div>
             <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-emerald-400 rounded-3xl -rotate-3 opacity-15 animate-pulse delay-75"></div>
             <img 
-              src="/lovable-uploads/738600bd-3503-4de0-8624-3122ad4ed9dd.png"
+              src="/lovable-uploads/4e6d3065-11ae-498a-a7d4-32dcaf322903.png"
               alt="AI-Powered Professional"
-              className="relative w-full h-full object-cover rounded-3xl shadow-2xl border-4 border-white"
+              className="relative w-full h-full object-cover object-center rounded-3xl shadow-2xl border-4 border-white"
+              style={{ objectPosition: 'center top' }}
             />
           </div>
         </section>
