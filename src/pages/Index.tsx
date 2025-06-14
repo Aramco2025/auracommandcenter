@@ -12,12 +12,14 @@ import { CalendarPreview } from "@/components/CalendarPreview";
 import { AIAgentActivity } from "@/components/AIAgentActivity";
 import { AuthPage } from "@/components/AuthPage";
 import { useAuth } from "@/hooks/useAuth";
-import { LogOut } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
+import { LogOut, CreditCard, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const { user, loading, signOut } = useAuth();
+  const { subscription } = useSubscription();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,7 +40,7 @@ const Index = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <span className="text-primary-foreground font-bold text-xl">A</span>
+            <Brain className="w-6 h-6 text-primary-foreground" />
           </div>
           <p className="text-muted-foreground">Loading...</p>
         </div>
@@ -57,10 +59,10 @@ const Index = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center animate-glow">
-              <span className="text-primary-foreground font-bold text-sm">A</span>
+              <Brain className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">AURA Command Centre</h1>
+              <h1 className="text-2xl md:text-3xl font-bold text-foreground">OPTIO Command Centre</h1>
               <p className="text-sm text-muted-foreground">
                 Welcome back, {user.user_metadata?.full_name || user.email} • {currentTime.toLocaleDateString()} • {currentTime.toLocaleTimeString()}
               </p>
@@ -68,10 +70,21 @@ const Index = () => {
           </div>
           
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="animate-pulse-slow">
-              <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-              Live
-            </Badge>
+            {subscription.subscribed ? (
+              <Badge variant="outline" className="animate-pulse-slow bg-green-50 border-green-200 text-green-700 dark:bg-green-950 dark:border-green-800 dark:text-green-300">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                Pro Active
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="animate-pulse-slow">
+                <div className="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                Free Trial
+              </Badge>
+            )}
+            <Button variant="outline" size="sm" onClick={() => navigate("/billing")}>
+              <CreditCard className="w-4 h-4 mr-2" />
+              Billing
+            </Button>
             <Button variant="outline" size="sm" onClick={signOut}>
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out

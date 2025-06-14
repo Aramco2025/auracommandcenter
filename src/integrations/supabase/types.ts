@@ -194,6 +194,7 @@ export type Database = {
           id: string
           last_edited_time: string | null
           notion_page_id: string
+          notion_task_id: string | null
           notion_url: string | null
           priority: string | null
           progress: number | null
@@ -210,6 +211,7 @@ export type Database = {
           id?: string
           last_edited_time?: string | null
           notion_page_id: string
+          notion_task_id?: string | null
           notion_url?: string | null
           priority?: string | null
           progress?: number | null
@@ -226,6 +228,7 @@ export type Database = {
           id?: string
           last_edited_time?: string | null
           notion_page_id?: string
+          notion_task_id?: string | null
           notion_url?: string | null
           priority?: string | null
           progress?: number | null
@@ -300,36 +303,96 @@ export type Database = {
         }
         Relationships: []
       }
+      subscribers: {
+        Row: {
+          billing_cycle: string | null
+          created_at: string
+          email: string
+          id: string
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          billing_cycle?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          billing_cycle?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       user_integrations: {
         Row: {
           created_at: string
+          google_access_token: string | null
+          google_refresh_token: string | null
           id: string
           integration_type: string
           is_connected: boolean | null
           last_sync: string | null
+          notion_access_token: string | null
           settings: Json | null
+          slack_access_token: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_status: string | null
           sync_frequency: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          google_access_token?: string | null
+          google_refresh_token?: string | null
           id?: string
           integration_type: string
           is_connected?: boolean | null
           last_sync?: string | null
+          notion_access_token?: string | null
           settings?: Json | null
+          slack_access_token?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_status?: string | null
           sync_frequency?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          google_access_token?: string | null
+          google_refresh_token?: string | null
           id?: string
           integration_type?: string
           is_connected?: boolean | null
           last_sync?: string | null
+          notion_access_token?: string | null
           settings?: Json | null
+          slack_access_token?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_status?: string | null
           sync_frequency?: number | null
           updated_at?: string
           user_id?: string
