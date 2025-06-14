@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -245,7 +244,7 @@ const Landing = () => {
               </Badge>
               <CardTitle className="text-3xl text-slate-800">Optio Pro</CardTitle>
               <div className="text-6xl font-bold text-slate-800 mt-6">
-                £60
+                $19
                 <span className="text-xl text-slate-500 font-normal">/month</span>
               </div>
               <CardDescription className="text-slate-600 mt-3 text-lg">
