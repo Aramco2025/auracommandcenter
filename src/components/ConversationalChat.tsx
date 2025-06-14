@@ -51,40 +51,67 @@ export const ConversationalChat = () => {
     }
   };
 
-  const getPersonalizedResponse = (result: any) => {
-    const responses = {
-      email_sent: [
-        "✉️ Perfect! Your email has been sent successfully.",
-        "📧 Done! I've sent that email for you.",
-        "✅ Email delivered! Anything else I can help with?"
-      ],
-      meeting_scheduled_google: [
-        "📅 Great! I've added that meeting to your Google Calendar.",
-        "✅ Meeting scheduled! It's now in your calendar.",
-        "🎯 Perfect! Your meeting is all set up in Google Calendar."
-      ],
-      task_created_notion: [
-        "📝 Task created! I've added that to your Notion workspace.",
-        "✅ Done! Your new task is now in Notion.",
-        "🎯 Perfect! I've created that task for you in Notion."
-      ],
-      calendar_query: [
-        "📅 Here's what I found on your calendar:",
-        "🗓️ Let me check your schedule for you:",
-        "📋 Here's what you have coming up:"
-      ],
-      auth_required: [
-        "🔐 I need to connect to your Google account to do that. Could you sign out and sign back in with Google?",
-        "🔗 Let's get you connected to Google first so I can access your calendar and email.",
-        "⚡ I'll need Google access for that. Please reconnect your account when you get a chance."
-      ]
-    };
-
-    const actionType = result.action || 'general';
-    const responseList = responses[actionType as keyof typeof responses] || [result.message];
-    const randomResponse = responseList[Math.floor(Math.random() * responseList.length)];
+  const getIntelligentResponse = (result: any, originalCommand: string) => {
+    // Context-aware responses based on command type and result
+    const commandType = result.action || 'general';
     
-    return randomResponse;
+    switch (commandType) {
+      case 'email_sent':
+        const emailResponses = [
+          `✉️ Perfect! I've sent that email for you. The recipient should receive it shortly.`,
+          `📧 Done! Your email is on its way. Is there anything else you'd like me to help with?`,
+          `✅ Email delivered successfully! I've also saved a copy in your sent items.`
+        ];
+        return emailResponses[Math.floor(Math.random() * emailResponses.length)];
+        
+      case 'meeting_scheduled_google':
+        return `📅 Excellent! I've created that meeting in your Google Calendar. All attendees will receive calendar invitations automatically. The meeting details are all set up and ready to go!`;
+        
+      case 'task_created_notion':
+        return `📝 Task created! I've added "${originalCommand.match(/create task[:\s]+(.+)/i)?.[1] || 'that task'}" to your Notion workspace. You can find it in your tasks database and update it anytime.`;
+        
+      case 'calendar_query':
+      case 'calendar_query_empty':
+        if (result.events && result.events.length > 0) {
+          return `📅 Here's what I found on your calendar:\n\n${result.events.map((event: any) => 
+            `• ${event.title} at ${new Date(event.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`
+          ).join('\n')}\n\nNeed me to reschedule anything or add new events?`;
+        } else {
+          return `📅 You're all clear today! No events scheduled. Perfect time to focus on important work or maybe schedule that meeting you've been putting off?`;
+        }
+        
+      case 'auth_required':
+        return `🔐 I need access to your Google account to handle that request. Could you sign out and sign back in with Google? Make sure to accept all permissions so I can access your calendar and email.`;
+        
+      case 'email_draft_auth_required':
+        return `📧 I've prepared that email as a draft, but I need Google access to actually send it. Once you reconnect, I can send it right away!`;
+        
+      case 'meeting_scheduled_local':
+        return `📅 I've scheduled that meeting locally, but couldn't sync it to Google Calendar right now. Once your Google connection is restored, I can sync it properly.`;
+        
+      case 'general_processing':
+        // Make general responses much more intelligent
+        const generalResponses = [
+          `🤔 I understand you want me to help with "${originalCommand}". Could you give me a bit more detail about what specifically you'd like me to do?`,
+          `💭 Interesting request! To make sure I handle this perfectly, could you clarify exactly what action you'd like me to take?`,
+          `🎯 I'm ready to help with that! Just need a bit more context - what would you like the end result to be?`
+        ];
+        return generalResponses[Math.floor(Math.random() * generalResponses.length)];
+        
+      default:
+        // Fallback with more personality
+        return `✅ Got it! I've processed your request. ${result.message || ''} Let me know if you need any follow-up actions!`;
+    }
+  };
+
+  const getErrorResponse = (error: any, originalCommand: string) => {
+    const errorResponses = [
+      `🤔 Hmm, I ran into an issue with "${originalCommand}". Could you try rephrasing that request? I want to make sure I understand exactly what you need.`,
+      `⚠️ Something went wrong on my end while processing that command. Let me try a different approach - could you break that down into smaller steps?`,
+      `💭 I'm having trouble with that specific request. Could you try asking in a different way? I'm here to help and want to get this right!`
+    ];
+    
+    return errorResponses[Math.floor(Math.random() * errorResponses.length)];
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,16 +125,17 @@ export const ConversationalChat = () => {
         type: 'command'
       };
 
+      const originalCommand = message;
       setMessages(prev => [...prev, userMessage]);
       setMessage("");
       setIsTyping(true);
 
       try {
-        const result = await processCommand(message);
+        const result = await processCommand(originalCommand);
         
         const aiResponse: Message = {
           id: (Date.now() + 1).toString(),
-          content: getPersonalizedResponse(result),
+          content: getIntelligentResponse(result, originalCommand),
           sender: 'ai',
           timestamp: new Date(),
           type: 'response'
@@ -115,32 +143,29 @@ export const ConversationalChat = () => {
 
         setMessages(prev => [...prev, aiResponse]);
         
+        // More specific toast notifications
         if (result.action) {
-          if (result.action.includes('_google') || result.action.includes('sent') || result.action.includes('created')) {
-            toast.success(`✅ ${result.action.replace('_', ' ').toUpperCase()}`);
+          if (result.action.includes('sent')) {
+            toast.success("📧 Email sent successfully!");
+          } else if (result.action.includes('scheduled')) {
+            toast.success("📅 Meeting scheduled!");
+          } else if (result.action.includes('created')) {
+            toast.success("📝 Task created!");
           } else if (result.action.includes('auth_required')) {
-            toast.error("Google authentication required - please sign out and sign back in");
-          } else {
-            toast.success(`Action completed: ${result.action}`);
+            toast.error("🔐 Google authentication required");
           }
         }
       } catch (error) {
-        const errorResponses = [
-          "🤔 Hmm, I had trouble with that request. Could you try rephrasing it?",
-          "⚠️ Something went wrong on my end. Mind giving that another shot?",
-          "💭 I didn't quite catch that. Could you try asking in a different way?"
-        ];
-        
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
-          content: errorResponses[Math.floor(Math.random() * errorResponses.length)],
+          content: getErrorResponse(error, originalCommand),
           sender: 'ai',
           timestamp: new Date(),
           type: 'error'
         };
         
         setMessages(prev => [...prev, errorMessage]);
-        toast.error("Failed to process your message");
+        toast.error("❌ Something went wrong - let's try that again");
         console.error("Chat error:", error);
       } finally {
         setIsTyping(false);
