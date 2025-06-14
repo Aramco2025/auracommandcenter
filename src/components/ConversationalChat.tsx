@@ -23,7 +23,7 @@ export const ConversationalChat = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      content: "Hi! I'm your AI assistant. I can help you with Gmail, Calendar, Notion tasks, and more. Try saying:\n• 'Schedule team meeting for tomorrow at 2pm'\n• 'Send email to john@example.com about project update'\n• 'Create task: Review quarterly reports'",
+      content: "Hey there! 👋 I'm Optio, your AI command center. I'm here to make your life easier by handling your Gmail, Calendar, and Notion tasks.\n\nJust tell me what you need in plain English! Here are some things I can do:\n\n• Schedule meetings: \"Book a team standup for tomorrow at 9am\"\n• Send emails: \"Email Sarah about the project deadline\"\n• Create tasks: \"Add 'Review budget proposal' to my tasks\"\n• Check calendar: \"What's on my schedule today?\"\n\nWhat would you like me to help you with?",
       sender: 'ai',
       timestamp: new Date(),
       type: 'response'
@@ -51,6 +51,42 @@ export const ConversationalChat = () => {
     }
   };
 
+  const getPersonalizedResponse = (result: any) => {
+    const responses = {
+      email_sent: [
+        "✉️ Perfect! Your email has been sent successfully.",
+        "📧 Done! I've sent that email for you.",
+        "✅ Email delivered! Anything else I can help with?"
+      ],
+      meeting_scheduled_google: [
+        "📅 Great! I've added that meeting to your Google Calendar.",
+        "✅ Meeting scheduled! It's now in your calendar.",
+        "🎯 Perfect! Your meeting is all set up in Google Calendar."
+      ],
+      task_created_notion: [
+        "📝 Task created! I've added that to your Notion workspace.",
+        "✅ Done! Your new task is now in Notion.",
+        "🎯 Perfect! I've created that task for you in Notion."
+      ],
+      calendar_query: [
+        "📅 Here's what I found on your calendar:",
+        "🗓️ Let me check your schedule for you:",
+        "📋 Here's what you have coming up:"
+      ],
+      auth_required: [
+        "🔐 I need to connect to your Google account to do that. Could you sign out and sign back in with Google?",
+        "🔗 Let's get you connected to Google first so I can access your calendar and email.",
+        "⚡ I'll need Google access for that. Please reconnect your account when you get a chance."
+      ]
+    };
+
+    const actionType = result.action || 'general';
+    const responseList = responses[actionType as keyof typeof responses] || [result.message];
+    const randomResponse = responseList[Math.floor(Math.random() * responseList.length)];
+    
+    return randomResponse;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim() && !isProcessing && user) {
@@ -71,7 +107,7 @@ export const ConversationalChat = () => {
         
         const aiResponse: Message = {
           id: (Date.now() + 1).toString(),
-          content: result.message || "Command processed successfully",
+          content: getPersonalizedResponse(result),
           sender: 'ai',
           timestamp: new Date(),
           type: 'response'
@@ -89,9 +125,15 @@ export const ConversationalChat = () => {
           }
         }
       } catch (error) {
+        const errorResponses = [
+          "🤔 Hmm, I had trouble with that request. Could you try rephrasing it?",
+          "⚠️ Something went wrong on my end. Mind giving that another shot?",
+          "💭 I didn't quite catch that. Could you try asking in a different way?"
+        ];
+        
         const errorMessage: Message = {
           id: (Date.now() + 1).toString(),
-          content: "I encountered an error processing your request. Please try again or rephrase your message.",
+          content: errorResponses[Math.floor(Math.random() * errorResponses.length)],
           sender: 'ai',
           timestamp: new Date(),
           type: 'error'
@@ -114,7 +156,7 @@ export const ConversationalChat = () => {
     <Card className="p-6 bg-card border-border h-[600px] flex flex-col">
       <div className="flex items-center gap-3 mb-4">
         <MessageSquare className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold text-foreground">AI Assistant</h3>
+        <h3 className="text-lg font-semibold text-foreground">Chat with Optio</h3>
         <Badge variant={hasGoogleToken ? "secondary" : "destructive"} className="text-xs">
           {hasGoogleToken ? "Google Connected" : "Google Disconnected"}
         </Badge>
@@ -130,7 +172,7 @@ export const ConversationalChat = () => {
         <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg flex items-center gap-2">
           <AlertCircle className="w-4 h-4 text-yellow-600" />
           <p className="text-sm text-yellow-700">
-            Some features require Google connection. Please sign out and sign back in with Google to enable calendar and email features.
+            I need Google access for calendar and email features. Please sign out and sign back in with Google!
           </p>
         </div>
       )}
