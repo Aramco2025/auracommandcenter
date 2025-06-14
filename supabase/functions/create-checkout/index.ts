@@ -49,8 +49,8 @@ serve(async (req) => {
     }
 
     // Define pricing based on billing cycle
-    const monthlyPrice = 6000; // £60 monthly
-    const annualPrice = 60000; // £600 annual (£50/month when billed annually)
+    const monthlyPrice = 1900; // $19 monthly
+    const annualPrice = 19000; // $190 annual ($15.83/month when billed annually)
     const unitAmount = billingCycle === "annual" ? annualPrice : monthlyPrice;
     const interval = billingCycle === "annual" ? "year" : "month";
 
@@ -62,7 +62,7 @@ serve(async (req) => {
       line_items: [
         {
           price_data: {
-            currency: "gbp",
+            currency: "usd",
             product_data: { 
               name: "Optio Pro",
               description: `Your AI command center - ${billingCycle} billing`

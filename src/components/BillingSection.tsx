@@ -45,8 +45,8 @@ export const BillingSection = () => {
     }
   };
 
-  const monthlyPrice = 60;
-  const annualPrice = 600; // £50/month when billed annually
+  const monthlyPrice = 19;
+  const annualPrice = 190; // $15.83/month when billed annually
   const savings = monthlyPrice * 12 - annualPrice;
 
   return (
@@ -104,7 +104,7 @@ export const BillingSection = () => {
             </span>
             {isAnnual && (
               <Badge variant="secondary" className="ml-2">
-                Save £{savings}
+                Save ${savings}
               </Badge>
             )}
           </div>
@@ -117,14 +117,14 @@ export const BillingSection = () => {
               </div>
               <CardTitle className="text-3xl">Optio Pro</CardTitle>
               <div className="text-5xl font-bold mt-4">
-                £{isAnnual ? Math.round(annualPrice / 12) : monthlyPrice}
+                ${isAnnual ? Math.round(annualPrice / 12) : monthlyPrice}
                 <span className="text-xl text-muted-foreground font-normal">
                   /month
                 </span>
               </div>
               {isAnnual && (
                 <p className="text-sm text-muted-foreground">
-                  Billed annually (£{annualPrice}/year)
+                  Billed annually (${annualPrice}/year)
                 </p>
               )}
               <CardDescription className="mt-2">
