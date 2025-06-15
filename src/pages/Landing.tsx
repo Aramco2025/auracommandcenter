@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Zap, Brain, MessageCircle, Calendar, Mail, FileText, BarChart3, Star, ArrowRight, Sparkles, Target, Clock, Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { ToolsBanner } from "@/components/ToolsBanner";
 
 const Landing = () => {
   const { user } = useAuth();
@@ -193,6 +193,9 @@ const Landing = () => {
             </div>
           </div>
         </section>
+
+        {/* Tools Banner */}
+        <ToolsBanner />
 
         {/* Features Grid */}
         <section className="container mx-auto px-6 py-20 bg-white/50 backdrop-blur-sm rounded-3xl mx-4 mb-20">
