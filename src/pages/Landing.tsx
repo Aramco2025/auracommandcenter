@@ -62,12 +62,17 @@ const Landing = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-emerald-50 text-slate-800 overflow-hidden">
-      {/* Animated background elements */}
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 text-slate-800 overflow-hidden">
+      {/* Enhanced animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-emerald-400 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-pulse"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-cyan-400 rounded-full mix-blend-multiply filter blur-xl opacity-5 animate-pulse"></div>
+        <div className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div className="absolute bottom-32 left-20 w-80 h-80 bg-gradient-to-r from-emerald-400 to-teal-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse delay-75"></div>
+        <div className="absolute top-1/3 left-1/3 w-64 h-64 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full mix-blend-multiply filter blur-xl opacity-15 animate-pulse delay-150"></div>
+        
+        {/* Geometric shapes */}
+        <div className="absolute top-40 left-1/4 w-4 h-4 bg-blue-400 rounded-full animate-pulse"></div>
+        <div className="absolute bottom-40 right-1/4 w-6 h-6 bg-emerald-400 rounded-full animate-pulse delay-75"></div>
+        <div className="absolute top-1/2 right-20 w-3 h-3 bg-purple-400 rounded-full animate-pulse delay-150"></div>
       </div>
 
       <div className="relative z-10">
@@ -98,72 +103,94 @@ const Landing = () => {
           </nav>
         </header>
 
-        {/* Hero Section */}
-        <section className="container mx-auto px-6 py-16 text-center">
-          <Badge className="mb-8 bg-gradient-to-r from-blue-100 to-emerald-100 text-blue-700 border-blue-200 px-6 py-2 text-sm font-medium">
-            <Zap className="w-4 h-4 mr-2" />
-            The Future of Productivity is Here
-          </Badge>
-          
-          <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight">
-            <span className="bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-              Stop Managing.
-            </span>
-            <br />
-            <span className="bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
-              Start Commanding.
-            </span>
-          </h1>
-          
-          <p className="text-xl md:text-2xl text-slate-600 mb-8 max-w-4xl mx-auto leading-relaxed">
-            The only AI assistant that actually gets things done. Connect all your tools, 
-            speak naturally, and watch as complex workflows execute themselves.
-          </p>
+        {/* Hero Section - New Layout */}
+        <section className="container mx-auto px-6 py-12">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left Column - Content */}
+            <div className="text-left lg:pr-8">
+              <Badge className="mb-8 bg-gradient-to-r from-blue-100 to-emerald-100 text-blue-700 border-blue-200 px-6 py-2 text-sm font-medium">
+                <Zap className="w-4 h-4 mr-2" />
+                The Future of Productivity is Here
+              </Badge>
+              
+              <h1 className="text-5xl md:text-6xl font-bold mb-8 leading-tight">
+                <span className="bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                  Stop Managing.
+                </span>
+                <br />
+                <span className="bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
+                  Start Commanding.
+                </span>
+              </h1>
+              
+              <p className="text-xl text-slate-600 mb-8 leading-relaxed">
+                The only AI assistant that actually gets things done. Connect all your tools, 
+                speak naturally, and watch as complex workflows execute themselves.
+              </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-            <Button 
-              size="lg" 
-              className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white px-10 py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300"
-              onClick={() => navigate("/auth")}
-            >
-              Get Started Now
-              <ArrowRight className="w-5 h-5 ml-2" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="border-slate-300 text-slate-700 hover:bg-slate-50 px-10 py-6 text-lg font-medium"
-            >
-              Watch Demo
-            </Button>
-          </div>
+              <div className="flex flex-col sm:flex-row gap-4 mb-12">
+                <Button 
+                  size="lg" 
+                  className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white px-10 py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300"
+                  onClick={() => navigate("/auth")}
+                >
+                  Get Started Now
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  className="border-slate-300 text-slate-700 hover:bg-slate-50 px-10 py-6 text-lg font-medium"
+                >
+                  Watch Demo
+                </Button>
+              </div>
 
-          {/* Trust indicators */}
-          <div className="flex flex-wrap justify-center items-center gap-8 mb-16 text-sm text-slate-500">
-            <div className="flex items-center gap-2">
-              <Shield className="w-4 h-4 text-emerald-500" />
-              <span>Enterprise Security</span>
+              {/* Trust indicators */}
+              <div className="flex flex-wrap gap-8 text-sm text-slate-500">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-emerald-500" />
+                  <span>Enterprise Security</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-blue-500" />
+                  <span>2-minute Setup</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                  <span>4.9/5 Rating</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-blue-500" />
-              <span>2-minute Setup</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Star className="w-4 h-4 text-yellow-500 fill-current" />
-              <span>4.9/5 Rating</span>
-            </div>
-          </div>
 
-          {/* Hero Image - Better positioning to show full head */}
-          <div className="relative mx-auto w-80 h-96 mb-20">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-3xl rotate-6 opacity-20 animate-pulse"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-emerald-400 rounded-3xl -rotate-3 opacity-15 animate-pulse delay-75"></div>
-            <img 
-              src="/lovable-uploads/4e6d3065-11ae-498a-a7d4-32dcaf322903.png"
-              alt="AI-Powered Professional"
-              className="relative w-full h-full object-cover rounded-3xl shadow-2xl border-4 border-white"
-              style={{ objectPosition: 'center 15%' }}
-            />
+            {/* Right Column - Enhanced Hero Image */}
+            <div className="relative lg:order-first order-last">
+              <div className="relative mx-auto max-w-md">
+                {/* Background decorative elements */}
+                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-3xl rotate-3 opacity-20 animate-pulse"></div>
+                <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400 to-teal-400 rounded-3xl -rotate-2 opacity-15 animate-pulse delay-75"></div>
+                
+                {/* Main image container with proper aspect ratio */}
+                <div className="relative bg-white rounded-3xl shadow-2xl border-4 border-white overflow-hidden aspect-[3/4]">
+                  <img 
+                    src="/lovable-uploads/3290a81d-1c77-429d-a319-4eacf0ae6323.png"
+                    alt="AI-Powered Professional"
+                    className="w-full h-full object-cover object-center"
+                  />
+                  
+                  {/* Overlay gradient for better text contrast if needed */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-transparent"></div>
+                </div>
+
+                {/* Floating UI elements */}
+                <div className="absolute -top-4 -right-4 bg-white rounded-full p-3 shadow-lg animate-bounce">
+                  <Brain className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="absolute -bottom-4 -left-4 bg-white rounded-full p-3 shadow-lg animate-bounce delay-150">
+                  <Sparkles className="w-6 h-6 text-emerald-600" />
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
