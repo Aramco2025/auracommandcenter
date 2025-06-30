@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,15 +51,24 @@ const Landing = () => {
     }
   ];
 
-  const benefits = [
-    "Complete AI assistant access",
-    "Unified command dashboard",
-    "Advanced automation workflows",
-    "Gmail & Calendar sync",
-    "Notion workspace integration",
-    "Real-time analytics",
-    "Priority support",
-    "30-day money-back guarantee"
+  const starterBenefits = [
+    "Connect up to 2 tools",
+    "Unlimited AI voice & text commands",
+    "Prebuilt workflows included",
+    "Email automation",
+    "Basic calendar integration",
+    "Standard support"
+  ];
+
+  const commanderBenefits = [
+    "Unlimited tool connections",
+    "Custom workflow builder",
+    "Unlimited automation runs",
+    "Priority support + 24hr setup concierge",
+    "Access to template vault",
+    "Advanced analytics",
+    "Multi-team collaboration",
+    "API access"
   ];
 
   return (
@@ -229,59 +239,111 @@ const Landing = () => {
         <section className="container mx-auto px-6 py-20">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-              Transform Your Workflow Today
+              Choose Your Command Level
             </h2>
             <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              Join thousands of professionals who've already upgraded their productivity with AI
+              Start small or go all-in. Both plans include everything you need to transform your workflow.
             </p>
           </div>
 
-          <Card className="max-w-lg mx-auto bg-white shadow-2xl border-2 border-blue-200 relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-blue-500 to-emerald-500"></div>
-            <CardHeader className="text-center pt-8">
-              <Badge className="bg-gradient-to-r from-blue-600 to-emerald-600 text-white mb-4 self-center">
-                ⚡ Most Popular
-              </Badge>
-              <CardTitle className="text-3xl text-slate-800">Optio Pro</CardTitle>
-              <div className="text-6xl font-bold text-slate-800 mt-6">
-                $19
-                <span className="text-xl text-slate-500 font-normal">/month</span>
-              </div>
-              <CardDescription className="text-slate-600 mt-3 text-lg">
-                Everything you need to supercharge your productivity
-              </CardDescription>
-            </CardHeader>
-            
-            <CardContent className="space-y-8 pb-8">
-              <div className="space-y-4">
-                {benefits.map((benefit, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center">
-                      <Check className="w-4 h-4 text-emerald-600" />
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {/* Starter Plan */}
+            <Card className="bg-white shadow-xl border-slate-200 relative overflow-hidden">
+              <CardHeader className="text-center pt-8">
+                <CardTitle className="text-2xl text-slate-800 mb-2">Starter Plan</CardTitle>
+                <CardDescription className="text-slate-600 mb-4">
+                  Perfect for solo operators or curious minds
+                </CardDescription>
+                <div className="text-5xl font-bold text-slate-800">
+                  £19
+                  <span className="text-xl text-slate-500 font-normal">/month</span>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="space-y-8 pb-8">
+                <div className="space-y-4">
+                  {starterBenefits.map((benefit, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center">
+                        <Check className="w-4 h-4 text-blue-600" />
+                      </div>
+                      <span className="text-slate-700">{benefit}</span>
                     </div>
-                    <span className="text-slate-700">{benefit}</span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <p className="text-sm text-blue-700 font-medium mb-2">Perfect for:</p>
+                  <p className="text-sm text-blue-600 italic">
+                    "Send email follow-ups + auto-schedule meetings" — fully covered here.
+                  </p>
+                </div>
+                
+                <Button 
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-6 text-lg font-semibold"
+                  onClick={() => navigate("/auth")}
+                >
+                  Start with Starter
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Commander Plan */}
+            <Card className="bg-white shadow-2xl border-2 border-emerald-200 relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-emerald-500 to-blue-500"></div>
+              <CardHeader className="text-center pt-8">
+                <Badge className="bg-gradient-to-r from-emerald-600 to-blue-600 text-white mb-4 self-center">
+                  🔥 Most Popular
+                </Badge>
+                <CardTitle className="text-2xl text-slate-800 mb-2">Commander Plan</CardTitle>
+                <CardDescription className="text-slate-600 mb-4">
+                  For power users, creatives, and small teams
+                </CardDescription>
+                <div className="text-5xl font-bold text-slate-800">
+                  £59
+                  <span className="text-xl text-slate-500 font-normal">/month</span>
+                </div>
+              </CardHeader>
               
-              <Button 
-                className="w-full bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300"
-                onClick={() => navigate("/auth")}
-              >
-                Subscribe Now
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
-              
-              <div className="text-center space-y-2">
-                <p className="text-slate-500 text-sm">
-                  ✓ Instant access • ✓ Cancel anytime
-                </p>
-                <p className="text-slate-400 text-xs">
-                  30-day money-back guarantee
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+              <CardContent className="space-y-8 pb-8">
+                <div className="space-y-4">
+                  {commanderBenefits.map((benefit, index) => (
+                    <div key={index} className="flex items-center gap-3">
+                      <div className="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center">
+                        <Check className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <span className="text-slate-700">{benefit}</span>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="bg-emerald-50 p-4 rounded-lg">
+                  <p className="text-sm text-emerald-700 font-medium mb-2">Perfect for:</p>
+                  <p className="text-sm text-emerald-600 italic">
+                    "Send proposal → auto-log in CRM → notify in Slack → update project board" — this is where magic happens.
+                  </p>
+                </div>
+                
+                <Button 
+                  className="w-full bg-gradient-to-r from-emerald-600 to-blue-600 hover:from-emerald-700 hover:to-blue-700 text-white py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300"
+                  onClick={() => navigate("/auth")}
+                >
+                  Become a Commander
+                  <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="text-center mt-12">
+            <p className="text-slate-500 text-sm mb-2">
+              ✓ 30-day money-back guarantee • ✓ Cancel anytime • ✓ Instant access
+            </p>
+            <p className="text-slate-400 text-xs">
+              All plans include enterprise-grade security and 24/7 uptime
+            </p>
+          </div>
         </section>
 
         {/* Footer */}
