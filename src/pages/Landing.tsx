@@ -103,92 +103,60 @@ const Landing = () => {
           </nav>
         </header>
 
-        {/* Hero Section - New Layout */}
-        <section className="container mx-auto px-6 py-12">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            {/* Left Column - Content */}
-            <div className="text-left lg:pr-8">
-              <Badge className="mb-8 bg-gradient-to-r from-blue-100 to-emerald-100 text-blue-700 border-blue-200 px-6 py-2 text-sm font-medium">
-                <Zap className="w-4 h-4 mr-2" />
-                The Future of Productivity is Here
-              </Badge>
-              
-              <h1 className="text-5xl md:text-6xl font-bold mb-8 leading-tight">
-                <span className="bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-                  Stop Managing.
-                </span>
-                <br />
-                <span className="bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
-                  Start Commanding.
-                </span>
-              </h1>
-              
-              <p className="text-xl text-slate-600 mb-8 leading-relaxed">
-                The only AI assistant that actually gets things done. Connect all your tools, 
-                speak naturally, and watch as complex workflows execute themselves.
-              </p>
+        {/* Hero Section - Centered Layout */}
+        <section className="container mx-auto px-6 py-20">
+          <div className="max-w-5xl mx-auto text-center">
+            <Badge className="mb-8 bg-gradient-to-r from-blue-100 to-emerald-100 text-blue-700 border-blue-200 px-6 py-2 text-sm font-medium">
+              <Zap className="w-4 h-4 mr-2" />
+              The Future of Productivity is Here
+            </Badge>
+            
+            <h1 className="text-6xl md:text-7xl font-bold mb-8 leading-tight">
+              <span className="bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
+                Stop Managing.
+              </span>
+              <br />
+              <span className="bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
+                Start Commanding.
+              </span>
+            </h1>
+            
+            <p className="text-2xl text-slate-600 mb-12 leading-relaxed max-w-4xl mx-auto">
+              The only AI assistant that actually gets things done. Connect all your tools, 
+              speak naturally, and watch as complex workflows execute themselves.
+            </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-12">
-                <Button 
-                  size="lg" 
-                  className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white px-10 py-6 text-lg font-semibold shadow-xl hover:shadow-2xl transition-all duration-300"
-                  onClick={() => navigate("/auth")}
-                >
-                  Get Started Now
-                  <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  className="border-slate-300 text-slate-700 hover:bg-slate-50 px-10 py-6 text-lg font-medium"
-                >
-                  Watch Demo
-                </Button>
-              </div>
-
-              {/* Trust indicators */}
-              <div className="flex flex-wrap gap-8 text-sm text-slate-500">
-                <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-emerald-500" />
-                  <span>Enterprise Security</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-blue-500" />
-                  <span>2-minute Setup</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                  <span>4.9/5 Rating</span>
-                </div>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-6 justify-center mb-16">
+              <Button 
+                size="lg" 
+                className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white px-12 py-8 text-xl font-semibold shadow-xl hover:shadow-2xl transition-all duration-300"
+                onClick={() => navigate("/auth")}
+              >
+                Get Started Now
+                <ArrowRight className="w-6 h-6 ml-3" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="border-slate-300 text-slate-700 hover:bg-slate-50 px-12 py-8 text-xl font-medium"
+              >
+                Watch Demo
+              </Button>
             </div>
 
-            {/* Right Column - Enhanced Hero Image */}
-            <div className="relative lg:order-first order-last">
-              <div className="relative mx-auto max-w-md">
-                {/* Background decorative elements */}
-                <div className="absolute -inset-4 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-3xl rotate-3 opacity-20 animate-pulse"></div>
-                <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400 to-teal-400 rounded-3xl -rotate-2 opacity-15 animate-pulse delay-75"></div>
-                
-                {/* Main image container with proper aspect ratio */}
-                <div className="relative bg-white rounded-3xl shadow-2xl border-4 border-white overflow-hidden aspect-[3/4]">
-                  <img 
-                    src="/lovable-uploads/3290a81d-1c77-429d-a319-4eacf0ae6323.png"
-                    alt="AI-Powered Professional"
-                    className="w-full h-full object-cover object-center"
-                  />
-                  
-                  {/* Overlay gradient for better text contrast if needed */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-transparent via-transparent to-transparent"></div>
-                </div>
-
-                {/* Floating UI elements */}
-                <div className="absolute -top-4 -right-4 bg-white rounded-full p-3 shadow-lg animate-bounce">
-                  <Brain className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="absolute -bottom-4 -left-4 bg-white rounded-full p-3 shadow-lg animate-bounce delay-150">
-                  <Sparkles className="w-6 h-6 text-emerald-600" />
-                </div>
+            {/* Trust indicators */}
+            <div className="flex flex-wrap justify-center gap-12 text-base text-slate-500">
+              <div className="flex items-center gap-3">
+                <Shield className="w-5 h-5 text-emerald-500" />
+                <span>Enterprise Security</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Clock className="w-5 h-5 text-blue-500" />
+                <span>2-minute Setup</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <Star className="w-5 h-5 text-yellow-500 fill-current" />
+                <span>4.9/5 Rating</span>
               </div>
             </div>
           </div>
